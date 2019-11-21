@@ -15,6 +15,10 @@
     "mitigation",
     "express"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JamesJGoodwin/umbress.git"
+  },
   "author": "JamesJGoodwin",
   "license": "MIT",
   "dependencies": {
