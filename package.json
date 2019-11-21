@@ -4,8 +4,9 @@
   "description": "Dynamic and flexible Express anti-DDoS middleware",
   "main": "index.js",
   "scripts": {
-    "build": "run-s test build:pre build:build",
     "watch": "tsc --watch --project ./tsconfig.json",
+    "build": "run-s test build:pre build:build",
+    "build:skip-tests": "run-s build:pre build:build",
     "build:pre": "rimraf build",
     "build:build": "tsc --project ./tsconfig.json",
     "test": "jest --detectOpenHandles --config config/jest.json"
