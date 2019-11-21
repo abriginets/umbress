@@ -12,14 +12,9 @@
         "moduleResolution": "node",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "target": "es2015",
         "outDir": "./build",
         "rootDir": "./src",
         "noImplicitAny": true,
-        "declaration": true,
-        "emitDeclarationOnly": true
-    },
-    "include": [
-        "src/types/global.ts"
-    ]
+        "declaration": true
+    }
   }
