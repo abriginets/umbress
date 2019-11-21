@@ -1,0 +1,41 @@
+import { umbressOptions } from './types/global'
+
+export function defaults() {
+    const defaults: umbressOptions = {
+        /* If your Express instance is behind the proxy (e.g. Nginx)
+        This option decides the way umbress is going to find real user's IP address (from it's connection if false and from x-forwarded-for if true) */
+
+        isProxyTrusted: false,
+
+        /* Settings to block users based on req/s ratio */
+
+        rateLimiter: {
+            /* Requests that can be made */
+
+            requests: 60,
+
+            /* In X amount of time*/
+
+            per: 60,
+
+            /* Time of ban in seconds */
+
+            banFor: 30
+        },
+
+        /** If you're using Express.js as REST API endpoint, you might want to notify banned client of his violation */
+        /** E.g. {"error": "You are making way too much requests so we had no choice but to cut your access. Please, retry later."} */
+
+        messageOnTooManyRequests: null,
+
+        /**  */
+
+        clearQueueAfterBan: false,
+
+        /** This option enables notification about bans and unbans */
+
+        logs: false
+    }
+
+    return defaults
+}
