@@ -67,7 +67,11 @@ export default function(instanceOptions: umbressOptions) {
         }
 
         for (let ip in queue) {
-            queue[ip]--
+            if (queue[ip] <= 0) {
+                delete queue[ip]
+            } else {
+                queue[ip]--
+            }
         }
     }, (options.rateLimiter.per / options.rateLimiter.requests) * 1000)
 
