@@ -1,1 +1,1 @@
-require('./build/index.js')
+require('./dist/index.js')

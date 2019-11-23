@@ -17,11 +17,14 @@ import express from 'express'
  */
 
 import { defaults } from './defaults'
-import { umbressOptions } from './types/global'
+import { umbressOptions } from './types'
+import { isIpInSubnets } from './ip'
 
 /**
  * Logic
  */
+
+const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/\d{1,3}$/
 
 export default function(instanceOptions: umbressOptions) {
     const defaultOptions = defaults()
@@ -37,6 +40,32 @@ export default function(instanceOptions: umbressOptions) {
                 }
             } else {
                 options[opt] = instanceOptions[opt]
+            }
+        }
+    }
+
+    if (Array.isArray(options.messageOnTooManyRequests)) {
+        throw new Error('You can`t pass an array to `messageOnTooManyRequests`')
+    }
+
+    if (options.whitelist.length > 0 && options.blacklist.length > 0) {
+        throw new Error('Both whitelist and blacklist were specified. You are allowed to use only one list at a time')
+    }
+
+    if (Array.isArray(options.messageOnAccessNotAllowed)) {
+        throw new Error('You can`t pass an array to `messageOnAccessNotAllowed`')
+    }
+
+    if (options.whitelist.length > 0 || options.blacklist.length > 0) {
+        var subnets: Array<string> = [],
+            key: string
+
+        if (options.whitelist.length > 0) key = 'whitelist'
+        if (options.blacklist.length > 0) key = 'blacklist'
+
+        for (let i = 0; i < options[key].length; i++) {
+            if (subnetRegex.test(options[key][i])) {
+                subnets.push(options[key][i])
             }
         }
     }
@@ -77,6 +106,53 @@ export default function(instanceOptions: umbressOptions) {
 
     return function(req: express.Request, res: express.Response, next: express.NextFunction) {
         const ip = getAddress(req, options.isProxyTrusted || false)
+
+        const isIpInList = (address: string, list: string[]) => {
+            let isIpInList = false
+
+            for (let i = 0; i < list.length; i++) {
+                isIpInList = address === list[i]
+                if (isIpInList) break
+            }
+
+            return isIpInList
+        }
+
+        if (options.whitelist.length > 0) {
+            if (subnets.length > 0 && subnets.length === options.whitelist.length) {
+                if (isIpInSubnets(ip, subnets)) next()
+            } else if (subnets.length > 0 && subnets.length !== options.whitelist.length) {
+                if (isIpInSubnets(ip, subnets) || isIpInList(ip, options.whitelist)) next()
+            } else if (subnets.length === 0 && options.whitelist.length > 0) {
+                if (isIpInList(ip, options.whitelist)) next()
+            }
+
+            if (typeof options.messageOnAccessNotAllowed === 'object') {
+                res.status(403).json(options.messageOnAccessNotAllowed)
+            } else {
+                res.status(403).end()
+            }
+        }
+
+        if (options.blacklist.length > 0) {
+            let toBlock = false
+
+            if (subnets.length > 0 && subnets.length === options.blacklist.length) {
+                if (isIpInSubnets(ip, subnets)) toBlock = true
+            } else if (subnets.length > 0 && subnets.length !== options.blacklist.length) {
+                if (isIpInSubnets(ip, subnets) || isIpInList(ip, options.blacklist)) toBlock = true
+            } else if (subnets.length === 0 && options.blacklist.length > 0) {
+                if (isIpInList(ip, options.blacklist)) toBlock = true
+            }
+
+            if (toBlock) {
+                if (typeof options.messageOnAccessNotAllowed === 'object') {
+                    res.status(403).json(options.messageOnAccessNotAllowed)
+                } else {
+                    res.status(403).end()
+                }
+            } else next()
+        }
 
         if (ip in queue) {
             if (ip in jail) {
@@ -132,6 +208,10 @@ const getAddress = (req: express.Request, isProxyTrusted: boolean) => {
             return req.headers['x-forwarded-for'][0]
         }
         return req.headers['x-forwarded-for']
+    } else {
+        if (req.connection.remoteAddress.startsWith('::ffff:')) {
+            return req.connection.remoteAddress.substr(7)
+        }
     }
     return req.connection.remoteAddress
 }
