@@ -1,21 +1,23 @@
 {
   "name": "umbress",
-  "version": "0.0.1a",
+  "version": "0.0.2a",
   "description": "Dynamic and flexible Express anti-DDoS middleware",
   "main": "index.js",
   "scripts": {
+    "build": "run-s test build:pre build:build build:post",
     "watch": "tsc --watch --project ./tsconfig.json",
-    "build": "run-s test build:pre build:build",
-    "build:skip-tests": "run-s build:pre build:build",
-    "build:pre": "rimraf build",
+    "build:pre": "rimraf dist",
+    "build:skip-tests": "run-s build:pre build:build build:post",
     "build:build": "tsc --project ./tsconfig.json",
-    "test": "jest --detectOpenHandles --config config/jest.json"
+    "build:post": "copyfiles -u 2 src/types/index.d.ts dist/types",
+    "test": "jest --config config/jest.json"
   },
   "keywords": [
     "ddos",
     "mitigation",
     "express"
   ],
+  "types": "./dist/types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JamesJGoodwin/umbress.git"
@@ -32,6 +34,7 @@
     "@types/supertest": "^2.0.8",
     "@typescript-eslint/eslint-plugin": "^2.8.0",
     "@typescript-eslint/parser": "^2.8.0",
+    "copyfiles": "^2.1.1",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^6.7.0",
     "eslint-plugin-prettier": "^3.1.1",

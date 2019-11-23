@@ -1,10 +1,12 @@
 {
     "compileOnSave": true,
     "compilerOptions": {
+        "target": "es6",
         "module": "commonjs",
         "pretty": true,
         "allowJs": false,
         "inlineSourceMap": false,
+        "removeComments": true,
         "strict": true,
         "strictNullChecks": false,
         "noUnusedLocals": true,
@@ -12,9 +14,14 @@
         "moduleResolution": "node",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "outDir": "./build",
-        "rootDir": "./src",
+        "outDir": "dist",
+        "rootDir": "src",
         "noImplicitAny": true,
         "declaration": true
-    }
+    },
+    "exclude": [
+        "src/__tests__",
+        "node_modules",
+        "dist"
+    ]
   }

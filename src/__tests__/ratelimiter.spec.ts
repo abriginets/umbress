@@ -9,7 +9,7 @@ app.use(
         rateLimiter: {
             requests: 10,
             per: 60,
-            banFor: 5
+            banFor: 1
         },
         clearQueueAfterBan: true,
         messageOnTooManyRequests: {
@@ -26,7 +26,7 @@ app.get('/', function(req, res) {
 })
 
 describe('Rate limiter', () => {
-    it('should block access', async done => {
+    it('should block access', async () => {
         let promises = []
 
         /** 11 requests made to not allow queue to be released */
@@ -35,22 +35,25 @@ describe('Rate limiter', () => {
                 request(app)
                     .get('/')
                     .set('Accept', 'application/json')
-                    .expect(200)
+                    .expect(200 || 429)
             )
         }
 
         await Promise.all(promises)
 
-        request(app)
+        await request(app)
             .get('/')
             .set('Accept', 'application/json')
-            .expect(429, done)
+            .expect(429)
 
-        setTimeout(() => {
-            request(app)
-                .get('/')
-                .set('Accept', 'application/json')
-                .expect(200, done)
-        }, 6000)
-    }, 10000)
+        await new Promise(resolve => {
+            setTimeout(async () => {
+                await request(app)
+                    .get('/')
+                    .set('Accept', 'application/json')
+                    .expect(200)
+                resolve()
+            }, 2000)
+        })
+    })
 })

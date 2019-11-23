@@ -51,4 +51,4 @@ node_modules/
 .vscode/
 
 # Build directory
-build/
+dist/

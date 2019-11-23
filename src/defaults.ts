@@ -1,4 +1,4 @@
-import { umbressOptions } from './types/global'
+import { umbressOptions } from './types'
 
 export function defaults() {
     const defaults: umbressOptions = {
@@ -34,7 +34,16 @@ export function defaults() {
 
         /** This option enables notification about bans and unbans */
 
-        logs: false
+        logs: false,
+
+        /** Whitelist and blacklist */
+
+        whitelist: [],
+        blacklist: [],
+
+        /** Same as `messageOnTooManyRequests` but for whitelist or blacklist */
+
+        messageOnAccessNotAllowed: null
     }
 
     return defaults
