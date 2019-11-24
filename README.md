@@ -95,3 +95,12 @@ each user will be cleared before visitor's IP unbanned.
 
 - #### `logs: boolean` (default: false)
 Enables simple logging for bans and unbans. E.g. `[umbress] Banned 1.2.3.4 for 30 seconds`
+
+- #### `whitelist: Array<string>` (default: [])
+Allows you to give access only to specified IP addresses and/or subnets. E.g. `1.2.3.4` or `12.34.56.78/32`
+
+- #### `blacklist: Array<string>` (default: [])
+Allows you to block access to specified IP addresses and/or subnets. **Note:** you can only specify whitelist or blacklist at a time.
+
+- #### `messageOnAccessNotAllowed: { [key: string]: any } | null` (default: null)
+Same as <a href="#messageontoomanyrequests--key-string-any---null-default-null">messageOnTooManyRequests</a> but will fire for non-whitelisted or blacklisted visitors.
