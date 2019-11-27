@@ -47,7 +47,7 @@ describe('test system loads and abuseipdb blocks', () => {
                     enabled: true,
                     token: '59b410d34af56795ceafe844bbe1a90222f09260d3671533cf874cce28eb5e175927e4b23830a3fe',
                     on: {
-                        cpuAvg: 1
+                        cpuAvg: 0.1
                     },
                     banFor: 3,
                     messageOnSuspicious: {
