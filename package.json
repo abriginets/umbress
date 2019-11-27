@@ -1,6 +1,6 @@
 {
   "name": "umbress",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Dynamic and flexible Express anti-DDoS middleware",
   "main": "dist/index.js",
   "scripts": {
