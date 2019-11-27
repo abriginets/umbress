@@ -287,8 +287,6 @@ export default function(instanceOptions: umbressOptions) {
                         let avg = avgCpuLoad.reduce((a, b) => a + b) / avgCpuLoad.length
                         let freemem = Math.round(os.freemem() / 1000000)
 
-                        console.log(avg, freemem)
-
                         if (avg > options.banSuspiciousIP.on.cpuAvg || freemem < options.banSuspiciousIP.on.freemem) {
                             fetch(
                                 `https://api.abuseipdb.com/api/v2/check?ipAddress=${encodeURIComponent(
