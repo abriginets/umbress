@@ -1,8 +1,13 @@
 <div align="center">
   <h1>Umbress</h2>
-  <a href="https://github.com/JamesJGoodwin/umbress/actions">
-    <img src="https://github.com/JamesJGoodwin/umbress/workflows/build/badge.svg" />
-  </a>
+  <div style="display: flex; align-items: center; justify-content: center;">
+    <a href="https://github.com/JamesJGoodwin/umbress/actions">
+      <img src="https://github.com/JamesJGoodwin/umbress/workflows/build/badge.svg" />
+    </a>
+    <a href="https://www.npmjs.com/package/umbress" target="_blank">
+      <img src="https://img.shields.io/npm/v/umbress.svg" />
+    </a>
+  </div>
   </br>
   </br>
 </div>
