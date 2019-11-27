@@ -1,8 +1,8 @@
 {
   "name": "umbress",
-  "version": "0.0.3a",
+  "version": "1.0.0",
   "description": "Dynamic and flexible Express anti-DDoS middleware",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "run-s test build:pre build:build build:post",
     "watch": "tsc --watch --project ./tsconfig.json",
@@ -16,6 +16,9 @@
     "ddos",
     "mitigation",
     "express"
+  ],
+  "files": [
+    "dist"
   ],
   "types": "./dist/types/index.d.ts",
   "repository": {
