@@ -154,9 +154,6 @@ export default function(instanceOptions: umbressOptions) {
     /** Interval to check and update avarage CPU load and amount of free RAM */
 
     if (options.banSuspiciousIP.enabled === true) {
-        console.log(os.cpus())
-        console.log(os.freemem())
-
         var quota: { isExceeded: boolean; unbanAt: null | number } = {
             isExceeded: false,
             unbanAt: null
@@ -289,6 +286,8 @@ export default function(instanceOptions: umbressOptions) {
                         checkingIP.push(ip)
                         let avg = avgCpuLoad.reduce((a, b) => a + b) / avgCpuLoad.length
                         let freemem = Math.round(os.freemem() / 1000000)
+
+                        console.log(avg, freemem)
 
                         if (avg > options.banSuspiciousIP.on.cpuAvg || freemem < options.banSuspiciousIP.on.freemem) {
                             fetch(
