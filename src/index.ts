@@ -343,6 +343,12 @@ export default function(instanceOptions: umbressOptions) {
 
                                         for (let i = 0; i < reportCategoriesFlat.length; i++) {
                                             if (relativeAbuseCategories.includes(reportCategoriesFlat[i])) {
+                                                if (options.logs === true) {
+                                                    console.log(
+                                                        `[umbress] Banned ${ip} as it was marked malicious by AbuseIPDB`
+                                                    )
+                                                }
+
                                                 suspiciousJail[ip] = options.banSuspiciousIP.banFor
                                                 suspiciousCache[ip] = {
                                                     suspicious: true,
