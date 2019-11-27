@@ -1,9 +1,6 @@
 import request from 'supertest'
 import express from 'express'
 import umbress from '../index'
-import dotenv from 'dotenv'
-
-dotenv.config()
 
 describe('Initialization errors', () => {
     it('should throw if message has wrong type', () => {
@@ -14,7 +11,7 @@ describe('Initialization errors', () => {
                 umbress({
                     banSuspiciousIP: {
                         enabled: true,
-                        token: process.env.abuseipdb,
+                        token: '59b410d34af56795ceafe844bbe1a90222f09260d3671533cf874cce28eb5e175927e4b23830a3fe',
                         // @ts-ignore
                         messageOnSuspicious: 'test'
                     }
@@ -48,7 +45,7 @@ describe('test system loads and abuseipdb blocks', () => {
                 isProxyTrusted: true,
                 banSuspiciousIP: {
                     enabled: true,
-                    token: process.env.abuseipdb,
+                    token: '59b410d34af56795ceafe844bbe1a90222f09260d3671533cf874cce28eb5e175927e4b23830a3fe',
                     on: {
                         cpuAvg: 1
                     },
