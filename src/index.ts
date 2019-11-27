@@ -333,16 +333,18 @@ export default function(instanceOptions: umbressOptions) {
                                 })
                                 .then((body: AbuseIPDBResponse) => {
                                     if (body.data.abuseConfidenceScore > 30) {
-                                        let reportCategories: Array<Array<number>> = []
+                                        let reportCategories: Array<number> = []
 
                                         body.data.reports.slice(0, 30).forEach(val => {
-                                            reportCategories.push(val.categories)
+                                            val.categories.forEach(cat => {
+                                                if (!reportCategories.includes(cat)) {
+                                                    reportCategories.push(cat)
+                                                }
+                                            })
                                         })
 
-                                        let reportCategoriesFlat = reportCategories.flat()
-
-                                        for (let i = 0; i < reportCategoriesFlat.length; i++) {
-                                            if (relativeAbuseCategories.includes(reportCategoriesFlat[i])) {
+                                        for (let i = 0; i < reportCategories.length; i++) {
+                                            if (relativeAbuseCategories.includes(reportCategories[i])) {
                                                 if (options.logs === true) {
                                                     console.log(
                                                         `[umbress] Banned ${ip} as it was marked malicious by AbuseIPDB`
