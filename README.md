@@ -18,6 +18,11 @@
 <b>Umbress</b> is a fast and easy-to-use DDoS mitigation Express.js middleware. It has several techniques
 of detection and mitigation like smart rate-limiter based on req/s or overall system load and suspicious IP address detection (based on <a href="https://www.abuseipdb.com/" target="_blank">AbuseIPDB</a> data)
 
+## Features
+- Adaptive rate-limiter
+- Malicious IP checker and blocker
+- Whitelists and blacklists for single IPs or subnets (currently IPv4 only)
+
 ## Requirements
 
 - Node.js 10+
