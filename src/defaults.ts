@@ -43,7 +43,39 @@ export function defaults() {
 
         /** Same as `messageOnTooManyRequests` but for whitelist or blacklist */
 
-        messageOnAccessNotAllowed: null
+        messageOnAccessNotAllowed: null,
+
+        /** Ban IP addresses engaged in illegal activities */
+
+        banSuspiciousIP: {
+            /** Is enabled */
+
+            enabled: false,
+
+            /** AbuseIPDB token */
+
+            token: '',
+
+            /** Conditions to start checking IP addresses */
+
+            on: {
+                /** Start checking IP addresses if free memory on machine is less then X megabytes */
+
+                freemem: 250,
+
+                /** Start checking IP addresses if avarage CPU load was higher than X percent in 10 seconds */
+
+                cpuAvg: 95
+            },
+
+            /** Time to ban IP if it was detected as suspicious */
+
+            banFor: 3600,
+
+            /** Same as `messageOnTooManyRequests` but for suspicious IP addresses */
+
+            messageOnSuspicious: null
+        }
     }
 
     return defaults

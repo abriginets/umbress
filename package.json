@@ -1,6 +1,6 @@
 {
   "name": "umbress",
-  "version": "0.0.2a",
+  "version": "0.0.3a",
   "description": "Dynamic and flexible Express anti-DDoS middleware",
   "main": "index.js",
   "scripts": {
@@ -24,16 +24,19 @@
   "author": "JamesJGoodwin",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "node-fetch": "^2.6.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.2",
     "@types/jest": "^24.0.23",
     "@types/node": "^12.12.8",
+    "@types/node-fetch": "^2.5.4",
     "@types/supertest": "^2.0.8",
     "@typescript-eslint/eslint-plugin": "^2.8.0",
     "@typescript-eslint/parser": "^2.8.0",
     "copyfiles": "^2.1.1",
+    "dotenv": "^8.2.0",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^6.7.0",
     "eslint-plugin-prettier": "^3.1.1",
