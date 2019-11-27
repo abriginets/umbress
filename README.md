@@ -65,21 +65,21 @@ app.use(
 
 ## Options
 
-- #### `isProxyTrusted: boolean` (default: false)
+* #### `isProxyTrusted: boolean` (default: false)
 If you running your Express.js application behind the proxy (e.g. Nginx) - set this value to `true`. If Express.js is your main webserver and serves responses by itself then you should left it as it is.
 
 If `false` then value of `req.connection.remoteAddress` will be treated as visitor's IP address.
 
 If `true` then umbress will get IP address from `X-Forwarded-For` header. Make sure you pass it properly from your proxy.
-- #### `rateLimiter: object`
+* #### `rateLimiter: object`
   - #### `requests: number` (default: 60)
   The number of requests your application can be reached in *X amount of time*
-  - #### `per: number` (default: 60)
+  * #### `per: number` (default: 60)
   *X amount of time* for an option above (in seconds). E.g. if you set `requests` for 60 and `per` for 60 as well then your visitors will be able to make 60 requests per minute. It is recommended ratio.
-  - #### `banFor: number` (default: 30)
+  * #### `banFor: number` (default: 30)
   Amount of time (in seconds) to ban visitor's IP address for limit excess.
   
-- #### `messageOnTooManyRequests: { [key: string]: any } | null` (default: null)
+* #### `messageOnTooManyRequests: { [key: string]: any } | null` (default: null)
 If you trying to defend your REST API endpoints then you might want to notify your clients if they're violating the rules with JSON.
 You can pass there an object. For example, next JS-object:
   
@@ -92,7 +92,7 @@ You can pass there an object. For example, next JS-object:
 will be transformed to JSON string:
 `{"error":true,"message":"You are making too much requests!"}`
 
-- #### `clearQueueAfterBan: boolean` (default: false)
+* #### `clearQueueAfterBan: boolean` (default: false)
 Let's understand how queue works first. Each request increments queue for `1`. Each `N` amount of time queue decrements.
 `N` is calculated by the formula `(per / requests) * 1000` and matches the time in miliseconds. E.g. if `requests = 60` and `per = 30`
 then queue will be decrementing every 0,5 seconds. It means the more requests you can do in X amount of time the earlier you'll be
@@ -104,14 +104,34 @@ It means he has 60 points in queue which is decrementing every second. After 5 s
 If he make 5 more requests in 1 second he will be banned again. If you want to prevent this then you can set **clearQueueAfterBan** option to `true` and queue for
 each user will be cleared before visitor's IP unbanned.
 
-- #### `logs: boolean` (default: false)
+* #### `logs: boolean` (default: false)
 Enables simple logging for bans and unbans. E.g. `[umbress] Banned 1.2.3.4 for 30 seconds`
 
-- #### `whitelist: Array<string>` (default: [])
+* #### `whitelist: Array<string>` (default: [])
 Allows you to give access only to specified IP addresses and/or subnets. E.g. `1.2.3.4` or `12.34.56.78/32`
 
-- #### `blacklist: Array<string>` (default: [])
+* #### `blacklist: Array<string>` (default: [])
 Allows you to block access to specified IP addresses and/or subnets. **Note:** you can only specify whitelist or blacklist at a time.
 
-- #### `messageOnAccessNotAllowed: { [key: string]: any } | null` (default: null)
+* #### `messageOnAccessNotAllowed: { [key: string]: any } | null` (default: null)
 Same as <a href="#messageontoomanyrequests--key-string-any---null-default-null">messageOnTooManyRequests</a> but will fire for non-whitelisted or blacklisted visitors.
+
+* #### `banSuspiciousIP: object`
+  * #### `enabled: boolean` (default: false)
+  Enables suspicious IP addresses bans
+  
+  * #### `token: string` (default: '')
+  AbuseIPDB APIv2 token (registration required)
+ 
+  * #### `on: object`
+    * #### `freemem: number` (in megabytes) (default: 250) 
+    If your system has no more than `freemem` **megabytes** then check will be performed on current visitor's IP and it will be blocked (403 Forbidden) if it is flagged as malicious at AbuseIPDB.com.
+    
+    * #### `avgCpu: number` (default: 95)
+    If your system's CPU average load was higher than `avgCpu`% for the last 2-10 seconds then check will be performedon current visitor's IP and it will be blocked (403 Forbidden) if it is flagged as malicious at AbuseIPDB.com.
+    
+  * #### `banFor: number` (in seconds) (default: 3600)
+  Amount of seconds to restrict access for for malicious IP addresses.
+  
+  * #### `messageOnSuspicious: { [key: string]: any } | null` (default: null)
+  JSON message for a visitor who's access was restricted due to maliciously behaving IP address he is using.
