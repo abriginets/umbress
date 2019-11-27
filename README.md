@@ -4,12 +4,9 @@
     <img src="https://github.com/JamesJGoodwin/umbress/workflows/build/badge.svg" />
   </a>
   </br>
-  </br>
-  <p>:warning: Currently this middleware is not production-ready. Use it at your own risk :warning:</p>
-  </br>
 </div>
 
-<b>Umbress</b> is a fast and easy-to-use DDoS mitigation Express.js middleware. It has (will have) several techniques
+<b>Umbress</b> is a fast and easy-to-use DDoS mitigation Express.js middleware. It has several techniques
 of detection and mitigation like smart rate-limiter based on req/s or overall system load and suspicious IP address detection (based on <a href="https://www.abuseipdb.com/" target="_blank">AbuseIPDB</a> data)
 
 ## Requirements
