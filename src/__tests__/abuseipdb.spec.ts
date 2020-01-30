@@ -78,7 +78,7 @@ describe('test system loads and abuseipdb blocks', () => {
         await request(app)
             .get('/')
             .set('Accept', 'application/json')
-            .set('X-Forwarded-For', '121.157.82.170') // some random IP address flagged as the one implicated in DDoS attacks
+            .set('X-Forwarded-For', '49.229.29.50') // some random IP address flagged as the one implicated in DDoS attacks
             .expect(200)
 
         console.log('Bad IP request: OK')
@@ -88,7 +88,7 @@ describe('test system loads and abuseipdb blocks', () => {
                 await request(app)
                     .get('/')
                     .set('Accept', 'application/json')
-                    .set('X-Forwarded-For', '121.157.82.170')
+                    .set('X-Forwarded-For', '49.229.29.50')
                     .expect(403, {
                         success: false,
                         message:
@@ -106,7 +106,7 @@ describe('test system loads and abuseipdb blocks', () => {
                 await request(app)
                     .get('/')
                     .set('Accept', 'application/json')
-                    .set('X-Forwarded-For', '121.157.82.170') // some random IP address flagged as the one implicated in DDoS attacks
+                    .set('X-Forwarded-For', '49.229.29.50') // some random IP address flagged as the one implicated in DDoS attacks
                     .expect(200)
 
                 resolve()
