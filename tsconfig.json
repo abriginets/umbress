@@ -1,7 +1,6 @@
 {
     "compileOnSave": true,
     "compilerOptions": {
-        "lib": ["es2019.array"],
         "target": "es6",
         "module": "commonjs",
         "pretty": true,
