@@ -75,8 +75,7 @@ export function defaults(): UmbressOptions {
             /** Same as `messageOnTooManyRequests` but for suspicious IP addresses */
 
             messageOnSuspicious: null
-        },
-        uam: false
+        }
     }
 
     return defaults

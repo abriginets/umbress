@@ -21,7 +21,6 @@ export interface UmbressOptions {
         banFor?: number
         messageOnSuspicious?: messageObj
     }
-    uam?: boolean
 }
 
 type messageObj = { [key: string]: any } | null
