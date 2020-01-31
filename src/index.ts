@@ -53,6 +53,14 @@ const getAddress = (req: Request, isProxyTrusted: boolean): string => {
 
 export default function(instanceOptions: UmbressOptions): (req: Request, res: Response, next: NextFunction) => void {
     const defaultOptions = defaults()
+    const subnets: Array<string> = []
+    const queue = {}
+    const avgCpuLoad: Array<number> = []
+    const quota: { isExceeded: boolean; unbanAt: null | number } = {
+        isExceeded: false,
+        unbanAt: null
+    }
+
     let options = { ...defaultOptions }
 
     const merge = (target: UmbressOptions, source: UmbressOptions): UmbressOptions => {
@@ -103,7 +111,6 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
     }
 
     if (options.whitelist.length > 0 || options.blacklist.length > 0) {
-        var subnets: Array<string> = []
         let key = ''
 
         if (options.whitelist.length > 0) key = 'whitelist'
@@ -118,7 +125,6 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
 
     /** { ip: seconds } */
     const jail = {}
-    var queue = {}
 
     const suspiciousJail = {}
     const checkingIP: Array<string> = []
@@ -171,13 +177,6 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
     /** Interval to check and update avarage CPU load and amount of free RAM */
 
     if (options.banSuspiciousIP.enabled === true) {
-        var quota: { isExceeded: boolean; unbanAt: null | number } = {
-            isExceeded: false,
-            unbanAt: null
-        }
-
-        var avgCpuLoad: Array<number> = []
-
         setInterval(() => {
             const coresLoad: Array<number> = []
 

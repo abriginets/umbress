@@ -10,7 +10,6 @@ module.exports = {
     },
     rules: {
         '@typescript-eslint/member-delimiter-style': ['off'],
-        'no-var': ['off'],
         '@typescript-eslint/ban-ts-ignore': ['off']
     }
 };

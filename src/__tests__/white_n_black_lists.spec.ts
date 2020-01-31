@@ -35,7 +35,7 @@ describe('Whitelist and blacklist tests', () => {
         app.use(
             umbress({
                 isProxyTrusted: true,
-                whitelist: ['12.34.56.0/24', '8.8.8.8']
+                whitelist: ['12.34.65.0/24', '8.8.8.8']
             })
         )
 
@@ -46,7 +46,7 @@ describe('Whitelist and blacklist tests', () => {
         await request(app)
             .get('/')
             .set('Accept', 'application/json')
-            .set('X-Forwarded-For', '12.34.56.67')
+            .set('X-Forwarded-For', '12.34.65.67')
             .expect(200)
 
         await request(app)
@@ -58,13 +58,13 @@ describe('Whitelist and blacklist tests', () => {
         await request(app)
             .get('/')
             .set('Accept', 'application/json')
-            .set('X-Forwarded-For', '12.34.57.58')
+            .set('X-Forwarded-For', '12.34.66.58')
             .expect(403)
 
         await request(app)
             .get('/')
             .set('Accept', 'application/json')
-            .set('X-Forwarded-For', '185.195.205.215')
+            .set('X-Forwarded-For', '8.8.8.9')
             .expect(403)
     })
 
