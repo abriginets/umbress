@@ -1,7 +1,7 @@
-import { umbressOptions } from './types'
+import { UmbressOptions } from './types'
 
-export function defaults() {
-    const defaults: umbressOptions = {
+export function defaults(): UmbressOptions {
+    const defaults: UmbressOptions = {
         /* If your Express instance is behind the proxy (e.g. Nginx)
         This option decides the way umbress is going to find real user's IP address (from it's connection if false and from x-forwarded-for if true) */
 
@@ -75,7 +75,8 @@ export function defaults() {
             /** Same as `messageOnTooManyRequests` but for suspicious IP addresses */
 
             messageOnSuspicious: null
-        }
+        },
+        uam: false
     }
 
     return defaults

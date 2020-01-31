@@ -11,7 +11,7 @@
  */
 
 import os from 'os'
-import express from 'express'
+import { Request, Response, NextFunction } from 'express'
 import fetch from 'node-fetch'
 
 const cpus = os.cpus()
@@ -21,7 +21,7 @@ const cpus = os.cpus()
  */
 
 import { defaults } from './defaults'
-import { umbressOptions, AbuseIPDBResponse } from './types'
+import { UmbressOptions, AbuseIPDBResponse } from './types'
 import { isIpInSubnets } from './ip'
 
 /**
@@ -34,11 +34,28 @@ const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0
  */
 const relativeAbuseCategories = [4, 15, 16, 19, 20, 21, 23]
 
-export default function(instanceOptions: umbressOptions) {
-    const defaultOptions = defaults()
-    var options = { ...defaultOptions }
+const timestamp = (): number => Math.round(new Date().getTime() / 1000)
 
-    const merge = (target: any, source: any) => {
+const getAddress = (req: Request, isProxyTrusted: boolean): string => {
+    // if proxy is trusted then Express is obviously behind the proxy so it's intentional to work with x-forwarded-for
+    if (isProxyTrusted) {
+        if (Array.isArray(req.headers['x-forwarded-for'])) {
+            return req.headers['x-forwarded-for'][0]
+        }
+        return req.headers['x-forwarded-for']
+    } else {
+        if (req.connection.remoteAddress.startsWith('::ffff:')) {
+            return req.connection.remoteAddress.substr(7)
+        }
+    }
+    return req.connection.remoteAddress
+}
+
+export default function(instanceOptions: UmbressOptions): (req: Request, res: Response, next: NextFunction) => void {
+    const defaultOptions = defaults()
+    let options = { ...defaultOptions }
+
+    const merge = (target: UmbressOptions, source: UmbressOptions): UmbressOptions => {
         // Iterate through `source` properties and if an `Object` set property to merge of `target` and `source` properties
         for (const key of Object.keys(source)) {
             if (source[key] instanceof Object) {
@@ -86,8 +103,8 @@ export default function(instanceOptions: umbressOptions) {
     }
 
     if (options.whitelist.length > 0 || options.blacklist.length > 0) {
-        var subnets: Array<string> = [],
-            key: string
+        var subnets: Array<string> = []
+        let key = ''
 
         if (options.whitelist.length > 0) key = 'whitelist'
         if (options.blacklist.length > 0) key = 'blacklist'
@@ -101,7 +118,7 @@ export default function(instanceOptions: umbressOptions) {
 
     /** { ip: seconds } */
     const jail = {}
-    const queue = {}
+    var queue = {}
 
     const suspiciousJail = {}
     const checkingIP: Array<string> = []
@@ -112,9 +129,9 @@ export default function(instanceOptions: umbressOptions) {
      * The lower req/s ratio is - the less frequent queue is releasing ips from queue and jail
      */
     setInterval(() => {
-        let now = timestamp()
+        const now = timestamp()
         // if there is expired prisoners - release them
-        for (let prisoner in jail) {
+        for (const prisoner in jail) {
             if (now > jail[prisoner]) {
                 delete jail[prisoner]
 
@@ -128,7 +145,7 @@ export default function(instanceOptions: umbressOptions) {
             }
         }
 
-        for (let ip in queue) {
+        for (const ip in queue) {
             if (queue[ip] <= 0) {
                 delete queue[ip]
             } else queue[ip]--
@@ -138,13 +155,13 @@ export default function(instanceOptions: umbressOptions) {
     /** Interval to free jail of suspicious IP addresses */
 
     setInterval(() => {
-        for (let ip in suspiciousJail) {
+        for (const ip in suspiciousJail) {
             if (suspiciousJail[ip] <= 0) {
                 delete suspiciousJail[ip]
             } else suspiciousJail[ip]--
         }
 
-        for (let suspect in suspiciousCache) {
+        for (const suspect in suspiciousCache) {
             if (suspiciousCache[suspect].cachedSeconds <= 0) {
                 delete suspiciousCache[suspect]
             } else suspiciousCache[suspect].cachedSeconds--
@@ -162,18 +179,18 @@ export default function(instanceOptions: umbressOptions) {
         var avgCpuLoad: Array<number> = []
 
         setInterval(() => {
-            let coresLoad: Array<number> = []
+            const coresLoad: Array<number> = []
 
             for (let i = 0, len = cpus.length; i < len; i++) {
-                let cpu = cpus[i],
-                    total = 0,
-                    stats: { [key: string]: number } = {}
+                const cpu = cpus[i]
+                let total = 0
+                const stats: { [key: string]: number } = {}
 
-                for (var type in cpu.times) {
+                for (const type in cpu.times) {
                     total += cpu.times[type]
                 }
 
-                for (type in cpu.times) {
+                for (const type in cpu.times) {
                     if (type !== 'idle') {
                         stats[type] = Math.round((100 * cpu.times[type]) / total)
                     }
@@ -188,10 +205,10 @@ export default function(instanceOptions: umbressOptions) {
         }, 1000)
     }
 
-    return function(req: express.Request, res: express.Response, next: express.NextFunction) {
+    return function(req: Request, res: Response, next: NextFunction): void {
         const ip = getAddress(req, options.isProxyTrusted || false)
 
-        const isIpInList = (address: string, list: string[]) => {
+        const isIpInList = (address: string, list: string[]): boolean => {
             let isIpInList = false
 
             for (let i = 0; i < list.length; i++) {
@@ -284,8 +301,8 @@ export default function(instanceOptions: umbressOptions) {
                 if (quota.isExceeded === false && !checkingIP.includes(ip) && ip in suspiciousCache === false) {
                     if (avgCpuLoad.length >= 2) {
                         checkingIP.push(ip)
-                        let avg = avgCpuLoad.reduce((a, b) => a + b) / avgCpuLoad.length
-                        let freemem = Math.round(os.freemem() / 1000000)
+                        const avg = avgCpuLoad.reduce((a, b) => a + b) / avgCpuLoad.length
+                        const freemem = Math.round(os.freemem() / 1000000)
 
                         if (avg > options.banSuspiciousIP.on.cpuAvg || freemem < options.banSuspiciousIP.on.freemem) {
                             fetch(
@@ -333,7 +350,7 @@ export default function(instanceOptions: umbressOptions) {
                                 })
                                 .then((body: AbuseIPDBResponse) => {
                                     if (body.data.abuseConfidenceScore > 30) {
-                                        let reportCategories: Array<number> = []
+                                        const reportCategories: Array<number> = []
 
                                         body.data.reports.slice(0, 30).forEach(val => {
                                             val.categories.forEach(cat => {
@@ -392,21 +409,4 @@ export default function(instanceOptions: umbressOptions) {
 
         next()
     }
-}
-
-const timestamp = () => Math.round(new Date().getTime() / 1000)
-
-const getAddress = (req: express.Request, isProxyTrusted: boolean) => {
-    // if proxy is trusted then Express is obviously behind the proxy so it's intentional to work with x-forwarded-for
-    if (isProxyTrusted) {
-        if (Array.isArray(req.headers['x-forwarded-for'])) {
-            return req.headers['x-forwarded-for'][0]
-        }
-        return req.headers['x-forwarded-for']
-    } else {
-        if (req.connection.remoteAddress.startsWith('::ffff:')) {
-            return req.connection.remoteAddress.substr(7)
-        }
-    }
-    return req.connection.remoteAddress
 }

@@ -1,4 +1,4 @@
-export interface umbressOptions {
+export interface UmbressOptions {
     isProxyTrusted?: boolean
     rateLimiter?: {
         requests?: number
@@ -21,6 +21,7 @@ export interface umbressOptions {
         banFor?: number
         messageOnSuspicious?: messageObj
     }
+    uam?: boolean
 }
 
 type messageObj = { [key: string]: any } | null
