@@ -1,4 +1,4 @@
-export interface umbressOptions {
+export interface UmbressOptions {
     isProxyTrusted?: boolean
     rateLimiter?: {
         requests?: number
