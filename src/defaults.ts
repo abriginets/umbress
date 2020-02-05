@@ -1,4 +1,4 @@
-import { UmbressOptions } from './types'
+import { UmbressOptions } from '../typings'
 
 export function defaults(): UmbressOptions {
     const defaults: UmbressOptions = {
@@ -75,6 +75,10 @@ export function defaults(): UmbressOptions {
             /** Same as `messageOnTooManyRequests` but for suspicious IP addresses */
 
             messageOnSuspicious: null
+        },
+        advancedClientChallenging: {
+            enabled: false,
+            content: ''
         }
     }
 

@@ -4,15 +4,19 @@
  * MIT Licensed
  */
 
-'use strict'
+import { UmbressOptions, AbuseIPDBResponse, PugTemplates } from '../typings'
 
 /**
  * Core Modules
  */
 
 import os from 'os'
-import { Request, Response, NextFunction } from 'express'
+import fs from 'fs'
+import pug from 'pug'
+import path from 'path'
 import fetch from 'node-fetch'
+import uuidv4 from 'uuid/v4'
+import { Request, Response, NextFunction } from 'express'
 
 const cpus = os.cpus()
 
@@ -21,8 +25,8 @@ const cpus = os.cpus()
  */
 
 import { defaults } from './defaults'
-import { UmbressOptions, AbuseIPDBResponse } from './types'
 import { isIpInSubnets } from './ip'
+import { timestamp, getAddress, getAdvancedAssets } from './helpers'
 
 /**
  * Logic
@@ -34,22 +38,26 @@ const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0
  */
 const relativeAbuseCategories = [4, 15, 16, 19, 20, 21, 23]
 
-const timestamp = (): number => Math.round(new Date().getTime() / 1000)
+const pugs: PugTemplates = {}
+const templatesPath = path.join(__dirname + '/../templates/')
 
-const getAddress = (req: Request, isProxyTrusted: boolean): string => {
-    // if proxy is trusted then Express is obviously behind the proxy so it's intentional to work with x-forwarded-for
-    if (isProxyTrusted) {
-        if (Array.isArray(req.headers['x-forwarded-for'])) {
-            return req.headers['x-forwarded-for'][0]
-        }
-        return req.headers['x-forwarded-for']
-    } else {
-        if (req.connection.remoteAddress.startsWith('::ffff:')) {
-            return req.connection.remoteAddress.substr(7)
+fs.readdirSync(templatesPath).forEach((file: string): void => {
+    if (file.endsWith('.pug')) {
+        try {
+            const filepath = templatesPath + file
+            pugs[file.split('.pug')[0]] = pug.compile(fs.readFileSync(filepath, { encoding: 'utf-8' }), {
+                filename: filepath
+            })
+        } catch (e) {
+            console.error(e)
         }
     }
-    return req.connection.remoteAddress
-}
+})
+
+const CLEARANCE_COOKIE_NAME = '__umb_clearance'
+const UMBRESS_COOKIE_NAME = '__umbuuid'
+const PROXY_HOSTNAME = 'X-Forwarded-Hostname'
+const PROXY_PROTO = 'X-Forwarded-Proto'
 
 export default function(instanceOptions: UmbressOptions): (req: Request, res: Response, next: NextFunction) => void {
     const defaultOptions = defaults()
@@ -77,6 +85,28 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
     }
 
     options = merge(options, instanceOptions)
+
+    if (Object.keys(options.advancedClientChallenging).length > 0) {
+        if (typeof options.advancedClientChallenging.enabled === 'boolean') {
+            if (options.advancedClientChallenging.enabled === true) {
+                if (
+                    typeof options.advancedClientChallenging.content === 'string' &&
+                    options.advancedClientChallenging.content.length === 0
+                ) {
+                    options.advancedClientChallenging.content = pugs.face()
+                } else {
+                    throw new Error('Wrong type or value of `advancedClientChallenging.content` key')
+                }
+            }
+        } else {
+            throw new Error(
+                `You passed ${typeof options.advancedClientChallenging
+                    .enabled} type for the 'advancedClientChallenging.enabled' key, boolean expected`
+            )
+        }
+    } else {
+        throw new Error('You passed an empty object for the `advancedClientChallenging` key')
+    }
 
     if (
         typeof options.messageOnTooManyRequests !== 'object' ||
@@ -204,8 +234,89 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
         }, 1000)
     }
 
-    return function(req: Request, res: Response, next: NextFunction): void {
+    return function(req: Request, res: Response, next: NextFunction): void | NextFunction | Response {
         const ip = getAddress(req, options.isProxyTrusted || false)
+        if (options.advancedClientChallenging.enabled === true) {
+            if (req.method === 'POST') {
+                if (!req.body) return next()
+                if ('sk' in req.body === false || 'jschallenge' in req.body === false) return next()
+
+                const bd: { sk: string; jschallenge: string } = req.body
+
+                const dict = '0123456789',
+                    numbers: number[] = [],
+                    letters: string[] = []
+
+                bd.sk.split('').forEach(symbol => {
+                    if (dict.includes(symbol)) numbers.push(parseInt(symbol))
+                    else letters.push(symbol)
+                })
+
+                const answer =
+                    numbers.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) * letters.length
+
+                if (answer === parseInt(bd.jschallenge)) {
+                    return res
+                        .cookie(CLEARANCE_COOKIE_NAME, uuidv4(), {
+                            expires: new Date(parseInt(req.query['__umbuid'].split('_')[1]) * 1000),
+                            domain: '.' + (options.isProxyTrusted ? req.headers[PROXY_HOSTNAME] : req.hostname),
+                            httpOnly: true,
+                            sameSite: 'Lax',
+                            secure: options.isProxyTrusted
+                                ? req.headers[PROXY_PROTO] === 'https'
+                                : req.protocol === 'https'
+                        })
+                        .redirect(
+                            301,
+                            `${options.isProxyTrusted ? req.headers[PROXY_PROTO] : req.protocol}://${
+                                options.isProxyTrusted ? req.headers[PROXY_HOSTNAME] : req.hostname
+                            }${req.path}`
+                        )
+                }
+                return next()
+            } else {
+                if (
+                    !!req.headers.cookie &&
+                    req.headers.cookie.includes(UMBRESS_COOKIE_NAME) &&
+                    req.headers.cookie.includes(CLEARANCE_COOKIE_NAME)
+                ) {
+                    return next()
+                } else {
+                    const hash = []
+                    const uuid = uuidv4()
+                    const dict = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+
+                    for (let i = 0; i < 128; i++) {
+                        hash.push(dict.charAt(Math.floor(Math.random() * dict.length)))
+                    }
+
+                    //const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
+                    const expires = new Date(Date.now() + 1000 * 20) // 20 seconds cache for debugging
+
+                    return res
+                        .status(503)
+                        .cookie(UMBRESS_COOKIE_NAME, uuid, {
+                            expires: expires,
+                            domain: '.' + (options.isProxyTrusted ? req.headers[PROXY_HOSTNAME] : req.hostname),
+                            httpOnly: true,
+                            sameSite: 'Lax',
+                            secure: options.isProxyTrusted
+                                ? req.headers[PROXY_PROTO] === 'https'
+                                : req.protocol === 'https'
+                        })
+                        .send(
+                            pugs.frame({
+                                content: options.advancedClientChallenging.content,
+                                styleContent: getAdvancedAssets('automated', 'css'),
+                                scriptContent: getAdvancedAssets('automated', 'js'),
+                                uuid: uuid,
+                                randCacheBypass: hash.join(''),
+                                cookieTimestamp: Math.round(expires.valueOf() / 1000)
+                            })
+                        )
+                }
+            }
+        }
 
         const isIpInList = (address: string, list: string[]): boolean => {
             let isIpInList = false
@@ -220,11 +331,11 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
 
         if (options.whitelist.length > 0) {
             if (subnets.length > 0 && subnets.length === options.whitelist.length) {
-                if (isIpInSubnets(ip, subnets)) next()
+                if (isIpInSubnets(ip, subnets)) return next()
             } else if (subnets.length > 0 && subnets.length !== options.whitelist.length) {
-                if (isIpInSubnets(ip, subnets) || isIpInList(ip, options.whitelist)) next()
+                if (isIpInSubnets(ip, subnets) || isIpInList(ip, options.whitelist)) return next()
             } else if (subnets.length === 0 && options.whitelist.length > 0) {
-                if (isIpInList(ip, options.whitelist)) next()
+                if (isIpInList(ip, options.whitelist)) return next()
             }
 
             if (typeof options.messageOnAccessNotAllowed === 'object') {
@@ -251,7 +362,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                 } else {
                     res.status(403).end()
                 }
-            } else next()
+            } else return next()
         }
 
         if (ip in queue) {
@@ -348,6 +459,13 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                                     return res.json()
                                 })
                                 .then((body: AbuseIPDBResponse) => {
+                                    if ('data' in body === false) {
+                                        return console.log(
+                                            '[umbress] Failed to fetch abuseipdb data, request finished with body: ' +
+                                                JSON.stringify(body)
+                                        )
+                                    }
+
                                     if (body.data.abuseConfidenceScore > 30) {
                                         const reportCategories: Array<number> = []
 
