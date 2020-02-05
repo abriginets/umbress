@@ -50,5 +50,6 @@ node_modules/
 # VS Code settings
 .vscode/
 
-# Build directory
+# Build directories
 dist/
+public/dist

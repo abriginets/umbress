@@ -1,7 +1,6 @@
 {
     "compileOnSave": true,
     "compilerOptions": {
-        "target": "es6",
         "module": "commonjs",
         "pretty": true,
         "allowJs": false,
@@ -14,14 +13,13 @@
         "moduleResolution": "node",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "outDir": "dist",
-        "rootDir": "src",
         "noImplicitAny": true,
         "declaration": true
     },
     "exclude": [
         "src/__tests__",
         "node_modules",
-        "dist"
+        "dist",
+        "public/dist"
     ]
   }

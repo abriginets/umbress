@@ -1,3 +1,5 @@
+import { compileTemplate } from 'pug'
+
 export interface UmbressOptions {
     isProxyTrusted?: boolean
     rateLimiter?: {
@@ -20,6 +22,10 @@ export interface UmbressOptions {
         }
         banFor?: number
         messageOnSuspicious?: messageObj
+    }
+    advancedClientChallenging?: {
+        enabled?: boolean
+        content?: string
     }
 }
 
@@ -48,5 +54,30 @@ export interface AbuseIPDBResponse {
             reporterCountryCode: string
             reporterCountryName: string
         }>
+    }
+}
+
+export interface PugTemplates {
+    [key: string]: compileTemplate
+}
+
+type RequestIdleCallbackHandle = any
+
+type RequestIdleCallbackOptions = {
+    timeout: number
+}
+
+type RequestIdleCallbackDeadline = {
+    readonly didTimeout: boolean
+    timeRemaining: () => number
+}
+
+declare global {
+    interface Window {
+        requestIdleCallback: (
+            callback: (deadline: RequestIdleCallbackDeadline) => void,
+            opts?: RequestIdleCallbackOptions
+        ) => RequestIdleCallbackHandle
+        cancelIdleCallback: (handle: RequestIdleCallbackHandle) => void
     }
 }

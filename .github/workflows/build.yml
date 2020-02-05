@@ -21,6 +21,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
+        env:
+          ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}s
       - run: npm install
       - run: npm test
       - run: npm run build:skip-tests
