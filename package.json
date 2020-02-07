@@ -4,9 +4,9 @@
   "description": "Dynamic and flexible Express anti-DDoS middleware",
   "main": "server/dist/index.js",
   "scripts": {
-    "build": "run-s clean-server clean-client build-server test build-client",
+    "build": "run-s build-server build-client test",
     "watch-server": "tsc --watch --project ./server/tsconfig.json",
-    "build-server": "run-s clean-server compile-server test",
+    "build-server": "run-s clean-server compile-server",
     "watch-client": "webpack --config ./webpack.config.js --watch",
     "build-client": "run-s clean-client compile-client",
     "compile-client": "webpack --config ./webpack.config.js",
