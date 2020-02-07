@@ -7,8 +7,7 @@ on:
 
 jobs:
   build:
-
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -21,8 +20,9 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
-        env:
-          ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}s
-      - run: npm install
-      - run: npm test
-      - run: npm run build:skip-tests
+      - name: Install
+        run: npm install
+      - name: Build
+        run: npm run build:skip-tests
+      - name: Test
+        run: npm run test

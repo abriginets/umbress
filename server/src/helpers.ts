@@ -32,7 +32,7 @@ export const getAddress = (req: Request, isProxyTrusted: boolean): string => {
 }
 
 export function getAdvancedAssets(name: 'automated', ext: 'css' | 'js'): string {
-    const dirname = path.resolve(__dirname, '../public/dist')
+    const dirname = path.resolve(__dirname, '../../public/dist')
     let fileContent = null
 
     fs.readdirSync(dirname).forEach((file: string) => {

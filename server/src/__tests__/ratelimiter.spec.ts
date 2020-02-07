@@ -27,7 +27,7 @@ app.get('/', function(req, res) {
 
 describe('Rate limiter', () => {
     it('should block access', async () => {
-        let promises = []
+        const promises = []
 
         /** 11 requests made to not allow queue to be released */
         for (let i = 0; i < 11; i++) {

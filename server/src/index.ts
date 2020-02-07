@@ -4,7 +4,7 @@
  * MIT Licensed
  */
 
-import { UmbressOptions, AbuseIPDBResponse, PugTemplates } from '../typings'
+import { UmbressOptions, AbuseIPDBResponse, PugTemplates } from '../../typings'
 
 /**
  * Core Modules
@@ -39,7 +39,7 @@ const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0
 const relativeAbuseCategories = [4, 15, 16, 19, 20, 21, 23]
 
 const pugs: PugTemplates = {}
-const templatesPath = path.join(__dirname + '/../templates/')
+const templatesPath = path.join(__dirname + '/../../templates/')
 
 fs.readdirSync(templatesPath).forEach((file: string): void => {
     if (file.endsWith('.pug')) {
@@ -236,10 +236,47 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
 
     return function(req: Request, res: Response, next: NextFunction): void | NextFunction | Response {
         const ip = getAddress(req, options.isProxyTrusted || false)
+
+        const sendInitial = () => {
+            const hash = []
+            const uuid = uuidv4()
+            const dict = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+
+            for (let i = 0; i < 128; i++) {
+                hash.push(dict.charAt(Math.floor(Math.random() * dict.length)))
+            }
+
+            //const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
+            const expires = new Date(Date.now() + 1000 * 20) // 20 seconds cache for debugging
+
+            return res
+                .status(503)
+                .cookie(UMBRESS_COOKIE_NAME, uuid, {
+                    expires: expires,
+                    domain: '.' + (options.isProxyTrusted ? req.headers[PROXY_HOSTNAME] : req.hostname),
+                    httpOnly: true,
+                    sameSite: 'Lax',
+                    secure: options.isProxyTrusted ? req.headers[PROXY_PROTO] === 'https' : req.protocol === 'https'
+                })
+                .send(
+                    pugs.frame({
+                        content: options.advancedClientChallenging.content,
+                        styleContent: getAdvancedAssets('automated', 'css'),
+                        scriptContent: getAdvancedAssets('automated', 'js'),
+                        uuid: uuid,
+                        randCacheBypass: hash.join(''),
+                        cookieTimestamp: Math.round(expires.valueOf() / 1000)
+                    })
+                )
+        }
+
         if (options.advancedClientChallenging.enabled === true) {
             if (req.method === 'POST') {
-                if (!req.body) return next()
-                if ('sk' in req.body === false || 'jschallenge' in req.body === false) return next()
+                if (!req.body) return sendInitial()
+                if ('sk' in req.body === false || 'jschallenge' in req.body === false) {
+                    console.log(req.body)
+                    return sendInitial()
+                }
 
                 const bd: { sk: string; jschallenge: string } = req.body
 
@@ -273,7 +310,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                             }${req.path}`
                         )
                 }
-                return next()
+                return sendInitial()
             } else {
                 if (
                     !!req.headers.cookie &&
@@ -282,38 +319,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                 ) {
                     return next()
                 } else {
-                    const hash = []
-                    const uuid = uuidv4()
-                    const dict = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-
-                    for (let i = 0; i < 128; i++) {
-                        hash.push(dict.charAt(Math.floor(Math.random() * dict.length)))
-                    }
-
-                    //const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
-                    const expires = new Date(Date.now() + 1000 * 20) // 20 seconds cache for debugging
-
-                    return res
-                        .status(503)
-                        .cookie(UMBRESS_COOKIE_NAME, uuid, {
-                            expires: expires,
-                            domain: '.' + (options.isProxyTrusted ? req.headers[PROXY_HOSTNAME] : req.hostname),
-                            httpOnly: true,
-                            sameSite: 'Lax',
-                            secure: options.isProxyTrusted
-                                ? req.headers[PROXY_PROTO] === 'https'
-                                : req.protocol === 'https'
-                        })
-                        .send(
-                            pugs.frame({
-                                content: options.advancedClientChallenging.content,
-                                styleContent: getAdvancedAssets('automated', 'css'),
-                                scriptContent: getAdvancedAssets('automated', 'js'),
-                                uuid: uuid,
-                                randCacheBypass: hash.join(''),
-                                cookieTimestamp: Math.round(expires.valueOf() / 1000)
-                            })
-                        )
+                    return sendInitial()
                 }
             }
         }
