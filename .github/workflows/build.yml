@@ -7,7 +7,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -24,6 +23,6 @@ jobs:
         env:
           ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
       - run: |
-        npm install
-        npm run build:skip-tests
-        npm run test
+          npm install
+          npm run build:skip-tests
+          npm run test
