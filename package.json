@@ -2,16 +2,16 @@
   "name": "umbress",
   "version": "1.1.0",
   "description": "Dynamic and flexible Express anti-DDoS middleware",
-  "main": "dist/index.js",
+  "main": "server/dist/index.js",
   "scripts": {
     "build": "run-s clean-server clean-client build-server test build-client",
-    "watch-server": "tsc --watch --project ./src/tsconfig.json",
+    "watch-server": "tsc --watch --project ./server/tsconfig.json",
     "build-server": "run-s clean-server compile-server test",
     "watch-client": "webpack --config ./webpack.config.js --watch",
     "build-client": "run-s clean-client compile-client",
     "compile-client": "webpack --config ./webpack.config.js",
-    "compile-server": "tsc --project ./src/tsconfig.json",
-    "clean-server": "rimraf dist",
+    "compile-server": "tsc --project ./server/tsconfig.json",
+    "clean-server": "rimraf server/dist",
     "clean-client": "rimraf public/dist",
     "build:skip-tests": "run-s clean-server clean-client build-server build-client",
     "build-server:skip-tests": "run-s clean-server compile-server",
@@ -23,12 +23,12 @@
     "express"
   ],
   "files": [
-    "dist",
+    "server/dist",
     "templates",
     "public/dist",
     "typings.d.ts"
   ],
-  "types": "./dist/types/index.d.ts",
+  "types": "typings.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JamesJGoodwin/umbress.git"
@@ -36,7 +36,6 @@
   "author": "JamesJGoodwin",
   "license": "MIT",
   "dependencies": {
-    "cookie": "^0.4.0",
     "node-fetch": "^2.6.0",
     "uuid": "^3.4.0"
   },
@@ -44,7 +43,6 @@
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
     "@types/express": "^4.17.2",
-    "@types/fingerprintjs2": "^2.0.0",
     "@types/jest": "^25.1.1",
     "@types/node": "^13.5.3",
     "@types/node-fetch": "^2.5.4",

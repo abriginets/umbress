@@ -17,9 +17,9 @@
         "declaration": true
     },
     "exclude": [
-        "src/__tests__",
+        "server/src/__tests__",
         "node_modules",
-        "dist",
+        "server/dist",
         "public/dist"
     ]
   }

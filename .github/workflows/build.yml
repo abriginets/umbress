@@ -7,22 +7,25 @@ on:
 
 jobs:
   build:
-
-    runs-on: ubuntu-16.04
-
     strategy:
       matrix:
-        node: [ '10', '12' ]
-
-    name: Node ${{ matrix.node }} sample
+        node-version: [10.x, 12.x]
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} w/ Node ${{ matrix.node-version }}
     steps:
       - uses: actions/checkout@v1
       - name: Setup node
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
+      - name: Run tests
         env:
-          ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}s
-      - run: npm install
-      - run: npm test
-      - run: npm run build:skip-tests
+          ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
+        run: |
+          npm install
+          npm run test
+      - name: Install and build
+        run: |
+          npm install
+          npm run build:skip-tests
