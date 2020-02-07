@@ -20,6 +20,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
+      - name: Install
       - run: npm install
       - name: Build
       - run: npm run build:skip-tests
