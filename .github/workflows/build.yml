@@ -26,3 +26,9 @@ jobs:
         run: npm run build:skip-tests
       - name: Test
         run: npm run test
+      - name: Upload codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: umbress-codecov
+          fail_ci_if_error: true
