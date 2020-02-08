@@ -19,16 +19,13 @@ export const timestamp = (): number => Math.round(new Date().getTime() / 1000)
 export const getAddress = (req: Request, isProxyTrusted: boolean): string => {
     // if proxy is trusted then Express is obviously behind the proxy so it's intentional to work with x-forwarded-for
     if (isProxyTrusted) {
-        if (Array.isArray(req.headers['x-forwarded-for'])) {
-            return req.headers['x-forwarded-for'][0]
-        }
-        return req.headers['x-forwarded-for']
+        return req.headers['x-forwarded-for'] as string
     } else {
         if (req.connection.remoteAddress.startsWith('::ffff:')) {
             return req.connection.remoteAddress.substr(7)
         }
+        return req.connection.remoteAddress
     }
-    return req.connection.remoteAddress
 }
 
 export function getAdvancedAssets(name: 'automated', ext: 'css' | 'js'): string {
