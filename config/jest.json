@@ -6,5 +6,6 @@
         "ts-jest": {
             "isolatedModules": true
         }
-    }
+    },
+    "collectCoverage": true
 }
