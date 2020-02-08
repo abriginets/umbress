@@ -246,8 +246,8 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                 hash.push(dict.charAt(Math.floor(Math.random() * dict.length)))
             }
 
-            //const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
-            const expires = new Date(Date.now() + 1000 * 20) // 20 seconds cache for debugging
+            const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
+            //const expires = new Date(Date.now() + 1000 * 20) // 20 seconds cache for debugging
 
             return res
                 .status(503)
