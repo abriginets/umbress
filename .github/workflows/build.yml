@@ -32,4 +32,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           name: umbress-codecov
           fail_ci_if_error: true
-          yml: ../../codecov.yml
