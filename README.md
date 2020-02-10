@@ -4,8 +4,8 @@
     <a href="https://github.com/JamesJGoodwin/umbress/actions">
       <img src="https://github.com/JamesJGoodwin/umbress/workflows/build/badge.svg" />
     </a>
-    <a href="https://codecov.io/gh/JamesJGoodwin/umbress" target="_blank">
-      <img src="https://codecov.io/gh/JamesJGoodwin/umbress/branch/master/graph/badge.svg" />
+    <a href="https://coveralls.io/github/JamesJGoodwin/umbress?branch=master" target="_blank">
+      <img src="https://coveralls.io/repos/github/JamesJGoodwin/umbress/badge.svg?branch=master" />
     </a>
     <a href="https://www.npmjs.com/package/umbress" target="_blank">
       <img src="https://img.shields.io/npm/v/umbress.svg" />
