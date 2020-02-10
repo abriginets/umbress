@@ -1,22 +1,20 @@
 import request from 'supertest'
 import express from 'express'
 import umbress from '../index'
+import delay from 'delay'
 
 const app = express()
 
 app.use(
     umbress({
+        isProxyTrusted: true,
         rateLimiter: {
+            enabled: true,
             requests: 10,
             per: 60,
-            banFor: 1
+            banFor: 3
         },
         clearQueueAfterBan: true,
-        messageOnTooManyRequests: {
-            error: true,
-            message:
-                'You are making way too much requests at this time so we had no choice but to restrict your access. Check `Retry-After` header for restriction expiry date.'
-        },
         logs: true
     })
 )
@@ -34,7 +32,10 @@ describe('Rate limiter', () => {
             promises.push(
                 request(app)
                     .get('/')
-                    .set('Accept', 'application/json')
+                    .set({
+                        Accept: 'application/json',
+                        'X-Forwarded-For': '12.34.56.78'
+                    })
                     .expect(200 || 429)
             )
         }
@@ -43,17 +44,29 @@ describe('Rate limiter', () => {
 
         await request(app)
             .get('/')
-            .set('Accept', 'application/json')
+            .set({
+                Accept: 'application/json',
+                'X-Forwarded-For': '12.34.56.78'
+            })
             .expect(429)
 
-        await new Promise(resolve => {
-            setTimeout(async () => {
-                await request(app)
-                    .get('/')
-                    .set('Accept', 'application/json')
-                    .expect(200)
-                resolve()
-            }, 2000)
-        })
-    })
+        // this test is needed to check ban based on data cached by redis
+        await request(app)
+            .get('/')
+            .set({
+                Accept: 'application/json',
+                'X-Forwarded-For': '12.34.56.78'
+            })
+            .expect(429)
+
+        await delay(3000)
+
+        await request(app)
+            .get('/')
+            .set({
+                Accept: 'application/json',
+                'X-Forwarded-For': '12.34.56.78'
+            })
+            .expect(200)
+    }, 10_000)
 })

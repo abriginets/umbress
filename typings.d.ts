@@ -3,33 +3,31 @@ import { compileTemplate } from 'pug'
 export interface UmbressOptions {
     isProxyTrusted?: boolean
     rateLimiter?: {
+        enabled?: boolean
         requests?: number
         per?: number
         banFor?: number
     }
-    messageOnTooManyRequests?: messageObj
     clearQueueAfterBan?: boolean
     logs?: boolean
     whitelist?: Array<string>
     blacklist?: Array<string>
-    messageOnAccessNotAllowed?: messageObj
-    banSuspiciousIP?: {
+    checkSuspiciousAddresses?: {
         enabled?: boolean
         token?: string
-        on?: {
-            freemem?: number
-            cpuAvg?: number
-        }
+        action?: 'block' | 'check'
         banFor?: number
-        messageOnSuspicious?: messageObj
     }
     advancedClientChallenging?: {
-        enabled?: boolean
+        enabled: boolean
         content?: string
+        cache?: 'redis'
+        cacheHost?: string
+        cachePort?: number
     }
 }
 
-type messageObj = { [key: string]: any } | null
+type messageObj = { [key: string]: any } | string
 
 export interface AbuseIPDBResponse {
     data: {

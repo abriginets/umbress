@@ -52,6 +52,28 @@ describe('test automated browser checking', () => {
 
     const cookieRegex = /^__umbuuid=([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12});\sDomain=(.+?);\sPath=\/; Expires=(.+?);\sHttpOnly;\sSameSite=Lax$/
 
+    it('should resend 301 on wrong answer', async () => {
+        const resOne = await request(app)
+            .get('/')
+            .expect('Content-type', /html/)
+            .expect(503)
+            .expect('Set-Cookie', cookieRegex)
+            .expect(/Checking your browser before accessing the website/)
+
+        const [umbuuid] = resOne.header['set-cookie']
+        const action = resOne.text.match(/action="\?__umbuid=(.+?)"/)[1]
+
+        const uuid = resOne.text.match(
+            /name="sk"\svalue="([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})"/
+        )[1]
+
+        await request(app)
+            .post('/?__umbuid=' + action)
+            .send(`sk=${uuid}&jschallenge=123`)
+            .set('Cookie', umbuuid)
+            .expect(503)
+    })
+
     it('should have cookie set', async () => {
         const resOne = await request(app)
             .get('/')
