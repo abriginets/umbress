@@ -32,7 +32,7 @@ jobs:
         run: npm run test
         env:
           ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
-      - name: Upload coverage
+      - name: Coveralls
         uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.COVERALLS_TOKEN }}
+        env:
+          COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"
