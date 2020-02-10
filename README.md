@@ -60,3 +60,7 @@ app.use(
 ```
 
 Default policy is *no more than 60 requests per minute; 30 seconds ban otherwise*, but can be configured in any other way. Ratelimiter is semantic-friendly - it will throw 429 Too Many Requests and provide visitor with `Retry-After` header.
+
+**Case #2: White- and blacklisting**: You can block access for some IP's (blacklist) or allow it to only specified ones or subnets (whitelist).
+
+**Note:** whitelist and blacklist can't be used at the same time. If you enabled both then only whitelist will be applied.
