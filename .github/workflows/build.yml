@@ -32,7 +32,12 @@ jobs:
         run: npm run test
         env:
           ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
+
+  coveralls:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
-          github-token: ${{ secrets.COVERALLS_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
