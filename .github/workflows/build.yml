@@ -34,5 +34,5 @@ jobs:
           ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
       - name: Coveralls
         uses: coverallsapp/github-action@master
-        env:
-          COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"
+        with:
+          github-token: ${{ secrets.COVERALLS_TOKEN }}
