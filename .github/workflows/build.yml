@@ -30,6 +30,8 @@ jobs:
         run: npm run build:skip-tests
       - name: Test
         run: npm run test
+        env:
+          ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
       - name: Upload coverage
         uses: coverallsapp/github-action@master
         with:
