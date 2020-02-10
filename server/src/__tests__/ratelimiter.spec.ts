@@ -23,8 +23,8 @@ app.get('/', function(req, res) {
     res.status(200).json({ success: true })
 })
 
-describe('Rate limiter', () => {
-    it('should block access', async () => {
+describe('Rate limiter', function() {
+    it('should block access', async done => {
         const promises = []
 
         /** 11 requests made to not allow queue to be released */
@@ -68,5 +68,7 @@ describe('Rate limiter', () => {
                 'X-Forwarded-For': '12.34.56.78'
             })
             .expect(200)
+
+        done()
     }, 10_000)
 })

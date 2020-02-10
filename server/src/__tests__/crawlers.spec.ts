@@ -23,15 +23,17 @@ const USERAGENTS = {
     mailru: 'Mozilla/5.0 (compatible; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots);'
 }
 
-beforeAll(async () => {
+beforeAll(async done => {
     await redis.del('bot_66.249.79.201')
 
     for (const key in BOTS) {
         await redis.del('bot_' + BOTS[key])
     }
+
+    done()
 })
 
-describe('block users trying to look like a crawler', () => {
+describe('block users trying to look like a crawler', function() {
     const app = express()
 
     app.use(
@@ -44,7 +46,7 @@ describe('block users trying to look like a crawler', () => {
         res.send('Request passed')
     })
 
-    it('should block access', async () => {
+    it('should block access', async done => {
         await request(app)
             .get('/')
             .set({
@@ -52,9 +54,11 @@ describe('block users trying to look like a crawler', () => {
                 'X-Forwarded-For': '12.34.56.78'
             })
             .expect(403)
+
+        done()
     })
 
-    it('should allow access to googlebot', async () => {
+    it('should allow access to googlebot', async done => {
         await request(app)
             .get('/')
             .set({
@@ -62,10 +66,12 @@ describe('block users trying to look like a crawler', () => {
                 'X-Forwarded-For': '66.249.79.201'
             })
             .expect(200)
+
+        done()
     })
 })
 
-describe('hitting cached results and throwing 503 to malicious visitors', () => {
+describe('hitting cached results and throwing 503 to malicious visitors', function() {
     const app = express()
 
     app.use(
@@ -81,7 +87,7 @@ describe('hitting cached results and throwing 503 to malicious visitors', () => 
         res.send('Passed!')
     })
 
-    it('should respond with 200', async () => {
+    it('should respond with 200', async done => {
         await request(app)
             .get('/')
             .set({
@@ -89,9 +95,11 @@ describe('hitting cached results and throwing 503 to malicious visitors', () => 
                 'X-Forwarded-For': '66.249.79.201'
             })
             .expect(200)
+
+        done()
     })
 
-    it('should respond with 503', async () => {
+    it('should respond with 503', async done => {
         await request(app)
             .get('/')
             .set({
@@ -101,9 +109,11 @@ describe('hitting cached results and throwing 503 to malicious visitors', () => 
             .expect('Content-type', /html/)
             .expect(503)
             .expect(/Checking your browser before accessing the website/)
+
+        done()
     })
 
-    it('should pass without automated checking', async () => {
+    it('should pass without automated checking', async done => {
         await request(app)
             .get('/')
             .set({
@@ -111,10 +121,12 @@ describe('hitting cached results and throwing 503 to malicious visitors', () => 
                 'X-Forwarded-For': BOTS.yandex
             })
             .expect(200)
+
+        done()
     })
 })
 
-describe('test crawlers access', () => {
+describe('test crawlers access', function() {
     const app = express()
 
     app.use(
@@ -130,7 +142,7 @@ describe('test crawlers access', () => {
         res.send('Hello, bot')
     })
 
-    it('should give access to googlebot', async () => {
+    it('should give access to googlebot', async done => {
         await request(app)
             .get('/')
             .set({
@@ -138,9 +150,11 @@ describe('test crawlers access', () => {
                 'X-Forwarded-For': BOTS.google
             })
             .expect(200)
+
+        done()
     })
 
-    it('should give access to yandexbot', async () => {
+    it('should give access to yandexbot', async done => {
         await request(app)
             .get('/')
             .set({
@@ -148,9 +162,11 @@ describe('test crawlers access', () => {
                 'X-Forwarded-For': BOTS.yandex
             })
             .expect(200)
+
+        done()
     })
 
-    it('should give access to bingbot', async () => {
+    it('should give access to bingbot', async done => {
         await request(app)
             .get('/')
             .set({
@@ -158,9 +174,11 @@ describe('test crawlers access', () => {
                 'X-Forwarded-For': BOTS.bing
             })
             .expect(200)
+
+        done()
     })
 
-    it('should give access to mailrubot', async () => {
+    it('should give access to mailrubot', async done => {
         await request(app)
             .get('/')
             .set({
@@ -168,5 +186,7 @@ describe('test crawlers access', () => {
                 'X-Forwarded-For': BOTS.mailru
             })
             .expect(200)
+
+        done()
     })
 })

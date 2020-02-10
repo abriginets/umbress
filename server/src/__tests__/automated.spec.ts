@@ -2,10 +2,10 @@ import request from 'supertest'
 import express, { Request, Response } from 'express'
 import umbress from '../index'
 
-describe('validate automated browser checking options', () => {
+describe('validate automated browser checking options', function() {
     const app = express()
 
-    it('should throw on "enabled" not boolean', () => {
+    it('should throw on "enabled" not boolean', function() {
         expect(() => {
             app.use(
                 umbress({
@@ -18,7 +18,7 @@ describe('validate automated browser checking options', () => {
         }).toThrow()
     })
 
-    it('should throw on "content" not string', () => {
+    it('should throw on "content" not string', function() {
         expect(() => {
             app.use(
                 umbress({
@@ -33,7 +33,7 @@ describe('validate automated browser checking options', () => {
     })
 })
 
-describe('test automated browser checking', () => {
+describe('test automated browser checking', function() {
     const app = express()
 
     app.use(express.urlencoded({ extended: true }))
@@ -52,7 +52,7 @@ describe('test automated browser checking', () => {
 
     const cookieRegex = /^__umbuuid=([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12});\sDomain=(.+?);\sPath=\/; Expires=(.+?);\sHttpOnly;\sSameSite=Lax$/
 
-    it('should resend 301 on wrong answer', async () => {
+    it('should resend 301 on wrong answer', async done => {
         const resOne = await request(app)
             .get('/')
             .expect('Content-type', /html/)
@@ -72,9 +72,11 @@ describe('test automated browser checking', () => {
             .send(`sk=${uuid}&jschallenge=123`)
             .set('Cookie', umbuuid)
             .expect(503)
+
+        done()
     })
 
-    it('should have cookie set', async () => {
+    it('should have cookie set', async done => {
         const resOne = await request(app)
             .get('/')
             .expect('Content-type', /html/)
@@ -112,5 +114,7 @@ describe('test automated browser checking', () => {
             .set('Cookie', [umbuuid, clearance])
             .expect('Challenge passed!')
             .expect(200)
+
+        done()
     })
 })

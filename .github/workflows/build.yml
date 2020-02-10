@@ -30,9 +30,7 @@ jobs:
         run: npm run build:skip-tests
       - name: Test
         run: npm run test
-      - name: Upload codecov
-        uses: codecov/codecov-action@v1
+      - name: Upload coverage
+        uses: coverallsapp/github-action@master
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          name: umbress-codecov
-          fail_ci_if_error: true
+          github-token: ${{ secrets.COVERALLS_TOKEN }}

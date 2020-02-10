@@ -11,12 +11,14 @@ const redis = new Redis({
 
 dotenv.config()
 
-beforeEach(async () => {
+beforeEach(async done => {
     await redis.del('abuseipdb_222.186.42.155')
     await redis.del('abuseipdb_140.82.118.3')
+
+    done()
 })
 
-describe('send request with malicious IP, get response with automated check', () => {
+describe('send request with malicious IP, get response with automated check', function() {
     const app = express()
 
     app.use(
@@ -34,7 +36,7 @@ describe('send request with malicious IP, get response with automated check', ()
         res.send('Access granted!')
     })
 
-    it('should response with 503', async () => {
+    it('should response with 503', async done => {
         await request(app)
             .get('/')
             .set('X-Forwarded-For', '222.186.42.155')
@@ -50,10 +52,12 @@ describe('send request with malicious IP, get response with automated check', ()
             .expect('Content-type', /html/)
             .expect(503)
             .expect(/Checking your browser before accessing the website/)
+
+        done()
     }, 10_000)
 })
 
-describe('send request with bad IP, get blocked by 403', () => {
+describe('send request with bad IP, get blocked by 403', function() {
     const app = express()
 
     app.use(
@@ -71,7 +75,7 @@ describe('send request with bad IP, get blocked by 403', () => {
         res.send('Access granted!')
     })
 
-    it('should forbid access', async () => {
+    it('should forbid access', async done => {
         await request(app)
             .get('/')
             .set('X-Forwarded-For', '222.186.42.155')
@@ -85,10 +89,12 @@ describe('send request with bad IP, get blocked by 403', () => {
             .get('/')
             .set('X-Forwarded-For', '222.186.42.155')
             .expect(403)
+
+        done()
     }, 10_000)
 })
 
-describe('send request with good IP, access should be granted', () => {
+describe('send request with good IP, access should be granted', function() {
     const app = express()
 
     app.use(
@@ -106,7 +112,7 @@ describe('send request with good IP, access should be granted', () => {
         res.send('Access granted!')
     })
 
-    it('should response with 200 ok', async () => {
+    it('should response with 200 ok', async done => {
         await request(app)
             .get('/')
             .set('X-Forwarded-For', '140.82.118.3')
@@ -122,5 +128,7 @@ describe('send request with good IP, access should be granted', () => {
             .expect('Content-type', /html/)
             .expect(200)
             .expect('Access granted!')
+
+        done()
     }, 10_000)
 })

@@ -2,8 +2,8 @@ import request from 'supertest'
 import express from 'express'
 import umbress from '../index'
 
-describe('Whitelist and blacklist tests', () => {
-    it('should allow ip to pass and restrict other ip`s access', async () => {
+describe('Whitelist and blacklist tests', function() {
+    it('should allow ip to pass and restrict other ip`s access', async done => {
         const app = express()
 
         app.use(
@@ -40,9 +40,11 @@ describe('Whitelist and blacklist tests', () => {
             .set('Accept', 'application/json')
             .set('X-Forwarded-For', '8.8.8.9')
             .expect(403)
+
+        done()
     })
 
-    it('should block all ip`s that are in blacklist', async () => {
+    it('should block all ip`s that are in blacklist', async done => {
         const app = express()
 
         app.use(
@@ -73,5 +75,7 @@ describe('Whitelist and blacklist tests', () => {
             .set('Accept', 'application/json')
             .set('X-Forwarded-For', '4.4.4.5')
             .expect(200)
+
+        done()
     })
 })
