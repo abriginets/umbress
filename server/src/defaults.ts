@@ -1,6 +1,6 @@
 import { UmbressOptions } from '../../typings'
 
-export function defaults(): UmbressOptions {
+export function defaults(contentForAutomated: string): UmbressOptions {
     const defaults: UmbressOptions = {
         /* If your Express instance is behind the proxy (e.g. Nginx)
         This option decides the way umbress is going to find real user's IP address (from it's connection if false and from x-forwarded-for if true) */
@@ -10,6 +10,10 @@ export function defaults(): UmbressOptions {
         /* Settings to block users based on req/s ratio */
 
         rateLimiter: {
+            /** Enables ratelimiter */
+
+            enabled: false,
+
             /* Requests that can be made */
 
             requests: 60,
@@ -22,11 +26,6 @@ export function defaults(): UmbressOptions {
 
             banFor: 30
         },
-
-        /** If you're using Express.js as REST API endpoint, you might want to notify banned client of his violation */
-        /** E.g. {"error": "You are making way too much requests so we had no choice but to cut your access. Please, retry later."} */
-
-        messageOnTooManyRequests: null,
 
         /**  */
 
@@ -41,13 +40,9 @@ export function defaults(): UmbressOptions {
         whitelist: [],
         blacklist: [],
 
-        /** Same as `messageOnTooManyRequests` but for whitelist or blacklist */
-
-        messageOnAccessNotAllowed: null,
-
         /** Ban IP addresses engaged in illegal activities */
 
-        banSuspiciousIP: {
+        checkSuspiciousAddresses: {
             /** Is enabled */
 
             enabled: false,
@@ -56,29 +51,37 @@ export function defaults(): UmbressOptions {
 
             token: '',
 
-            /** Conditions to start checking IP addresses */
+            /** Action for blocked IP addresses */
 
-            on: {
-                /** Start checking IP addresses if free memory on machine is less then X megabytes */
-
-                freemem: 250,
-
-                /** Start checking IP addresses if avarage CPU load was higher than X percent in 10 seconds */
-
-                cpuAvg: 95
-            },
+            action: 'check',
 
             /** Time to ban IP if it was detected as suspicious */
 
-            banFor: 3600,
-
-            /** Same as `messageOnTooManyRequests` but for suspicious IP addresses */
-
-            messageOnSuspicious: null
+            banFor: 3600
         },
+
+        /** Automated browser checking. Special page will be shown to user to pass JS challenge. Thisd is full automatic */
+
         advancedClientChallenging: {
+            /** Is option above enabled - boolean */
+
             enabled: false,
-            content: ''
+
+            /** Message for user - html or simple string */
+
+            content: contentForAutomated,
+
+            /** This is caching layer to store bots and crawlers IP addresses */
+
+            cache: 'redis',
+
+            /** Redis server address */
+
+            cacheHost: '127.0.0.1',
+
+            /** Redis server port */
+
+            cachePort: 6379
         }
     }
 

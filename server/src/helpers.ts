@@ -2,6 +2,8 @@
  * Core Modules
  */
 
+import { UmbressOptions } from '../../typings'
+
 import fs from 'fs'
 import path from 'path'
 import { Request } from 'express'
@@ -14,7 +16,35 @@ import { Request } from 'express'
  * Logic
  */
 
-export const timestamp = (): number => Math.round(new Date().getTime() / 1000)
+export const merge = (defaults: UmbressOptions, options: UmbressOptions): UmbressOptions => {
+    const result = { ...defaults }
+
+    for (const key in options) {
+        if (key in options) {
+            if (options[key] instanceof Object && !Array.isArray(options[key])) {
+                result[key] = merge(result[key], options[key])
+            } else {
+                result[key] = options[key]
+            }
+        }
+    }
+
+    return result
+}
+
+export const iterate = (obj: UmbressOptions, stack: UmbressOptions): void => {
+    for (const prop in obj) {
+        if (prop in obj) {
+            if (obj[prop] instanceof Object && !Array.isArray(obj[prop])) {
+                iterate(obj[prop], stack[prop])
+            } else {
+                if (typeof obj[prop] !== typeof stack[prop]) {
+                    throw new Error(`'${prop}' type should be ${typeof stack[prop]}, you passed ${typeof obj[prop]}`)
+                }
+            }
+        }
+    }
+}
 
 export const getAddress = (req: Request, isProxyTrusted: boolean): string => {
     // if proxy is trusted then Express is obviously behind the proxy so it's intentional to work with x-forwarded-for

@@ -20,15 +20,19 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
+      - name: Setup Redis
+        uses: shogo82148/actions-setup-redis@v1
+        with:
+          redis-version: '4.x'
       - name: Install
         run: npm install
       - name: Build
         run: npm run build:skip-tests
       - name: Test
         run: npm run test
-      - name: Upload codecov
-        uses: codecov/codecov-action@v1
+        env:
+          ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          name: umbress-codecov
-          fail_ci_if_error: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}

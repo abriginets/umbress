@@ -8,3 +8,14 @@ export const isIPinSubnet = (ip: string) => (cidr: string): boolean => {
 }
 
 export const isIpInSubnets = (ip: string, cidrs: Array<string>): boolean => cidrs.some(isIPinSubnet(ip))
+
+export const isIpInList = (address: string, list: string[]): boolean => {
+    let isIpInList = false
+
+    for (let i = 0; i < list.length; i++) {
+        isIpInList = address === list[i]
+        if (isIpInList) break
+    }
+
+    return isIpInList
+}
