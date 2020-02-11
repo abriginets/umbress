@@ -117,7 +117,7 @@ app.use(
 
 When users visiting your website for the first time, they will receive a unique cookie and will be seeing <a href="https://i.imgur.com/puUoVck.png" target="_blank">this page</a>. 5 seconds is needed to perform some computational tasks that only JavaScript-enabled visitors can solve. After 4-5 seconds the visitor will be redirected to the page by POSTing to it and receive the second cookie. Then the visitor be redirected to the requested URL immediatelly. Cookies TTL is 30 days, after it visitor will have to complete this challenge again.
 
-#### Case 4: Most complex and secure way
+#### Case #4: Most complex and secure way
 
 *To proceed with this configuration you need to sign up for AbuseIPDB*
 
