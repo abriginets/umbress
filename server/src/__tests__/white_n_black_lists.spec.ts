@@ -79,3 +79,74 @@ describe('Whitelist and blacklist tests', function() {
         done()
     })
 })
+
+describe('perform test coverage', function() {
+    it('should block with only one subnet in blacklist', async done => {
+        const app = express()
+
+        app.use(
+            umbress({
+                isProxyTrusted: true,
+                blacklist: ['12.34.56.0/24']
+            })
+        )
+
+        app.get('/', function(req, res) {
+            res.status(200).json({ success: true })
+        })
+
+        await request(app)
+            .get('/')
+            .set('Accept', 'application/json')
+            .set('X-Forwarded-For', '12.34.65.67')
+            .expect(200)
+
+        done()
+    })
+
+    it('should allow with only one ip in whitelist', async done => {
+        const app = express()
+
+        app.use(
+            umbress({
+                isProxyTrusted: true,
+                whitelist: ['1.11.111.111']
+            })
+        )
+
+        app.get('/', function(req, res) {
+            res.status(200).json({ success: true })
+        })
+
+        await request(app)
+            .get('/')
+            .set('Accept', 'application/json')
+            .set('X-Forwarded-For', '1.11.111.111')
+            .expect(200)
+
+        done()
+    })
+
+    it('should allow with only one subnet in whitelist', async done => {
+        const app = express()
+
+        app.use(
+            umbress({
+                isProxyTrusted: true,
+                whitelist: ['1.11.111.0/24']
+            })
+        )
+
+        app.get('/', function(req, res) {
+            res.status(200).json({ success: true })
+        })
+
+        await request(app)
+            .get('/')
+            .set('Accept', 'application/json')
+            .set('X-Forwarded-For', '1.11.111.111')
+            .expect(200)
+
+        done()
+    })
+})
