@@ -65,4 +65,44 @@ Default policy is *no more than 60 requests per minute; 30 seconds ban otherwise
 #### Case #2: White and black lists
 You can block access for some IP's (blacklist) or allow it to only specified ones (whitelist).
 
-**Note:** whitelist and blacklist can't be used at the same time. If you enabled both then only whitelist will be applied.
+**Note:** whitelist and blacklist can't be used at the same time. If you enabled both then only whitelist will be applied and blacklist will be ignored.
+
+```typescript
+import express from 'express'
+import umbress from 'umbress'
+
+const app = express()
+
+app.use(
+  umbress({
+    whitelist: ['12.34.65.0/24', '8.8.8.8']
+  })
+)
+```
+
+#### Case #3 Automated browser checking
+Every user (except search engine's bots and crawlers) will be promted with automated client-side browser checks. This process is fully automatic and works just like CloudFlare's UAM. Visitors will be seeing pre-defined message, but you can easilly modify it by yourself.
+
+```typescript
+import express from 'express'
+import umbress from 'umbress'
+
+const app = express()
+
+// ExpressJS above 4.16.0
+app.use(express.urlencoded({ extended: true }))
+
+// ExpressJS below 4.16.0
+import bodyParser from 'body-parser'
+app.use(bodyParser.urlencoded({ extended: false }))
+
+app.use(
+  umbress({
+    advancedClientChallenging: {
+      enabled: true
+    }
+  })
+)
+```
+
+When user visits your website for the first time, he will receive a unique cookie and will be seeing <a href="https://i.imgur.com/puUoVck.png" target="_blank">this page</a>. After 4-5 seconds he will be redirected to the page by POSTing to it and receive the second cookie. Then he will be redirected to the requested URL immediatelly. Cookies TTL is 30 days, after it visitor will have to complete this challenge again.
