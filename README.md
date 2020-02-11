@@ -83,6 +83,16 @@ app.use(
 #### Case #3 Automated browser checking
 Every user (except search engine's bots and crawlers) will be promted with automated client-side browser checks. This process is fully automatic and works just like CloudFlare's UAM. Visitors will be seeing pre-defined message, but you can easilly modify it by yourself.
 
+**Attention Nginx users!** If your ExpressJS app is behind Nginx then additional configuration is mandatory in order for this part of the module to work. Add next lines to your `location` directive:
+
+```nginx
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-For $remote_addr;
+proxy_set_header X-Forwarded-Hostname $host;
+```
+
+Now the code example:
+
 ```typescript
 import express from 'express'
 import umbress from 'umbress'
@@ -105,4 +115,33 @@ app.use(
 )
 ```
 
-When user visits your website for the first time, he will receive a unique cookie and will be seeing <a href="https://i.imgur.com/puUoVck.png" target="_blank">this page</a>. After 4-5 seconds he will be redirected to the page by POSTing to it and receive the second cookie. Then he will be redirected to the requested URL immediatelly. Cookies TTL is 30 days, after it visitor will have to complete this challenge again.
+When users visiting your website for the first time, they will receive a unique cookie and will be seeing <a href="https://i.imgur.com/puUoVck.png" target="_blank">this page</a>. 5 seconds is needed to perform some computational tasks that only JavaScript-enabled visitors can solve. After 4-5 seconds the visitor will be redirected to the page by POSTing to it and receive the second cookie. Then the visitor be redirected to the requested URL immediatelly. Cookies TTL is 30 days, after it visitor will have to complete this challenge again.
+
+#### Case 4: Most complex and secure way
+
+*To proceed with this configuration you need to sign up for AbuseIPDB*
+
+Umbress is tied up with AbuseIPDB database of IP addresses. When someone is hitting your website for the first time, Umbress will send a request to AbuseIPDB to check if IP address is malicious and being an origin of bad traffic. If so, the bad IP will be banned for a user-specified time. By default it is 3600 seconds or 1 hour. But if you enabled automated checking before then it's possible not to block user undoubtedly but ask him to pass an automated check to ensure he is using a real browser (this is the recommended way since <a href="https://en.wikipedia.org/wiki/IPv4_address_exhaustion" target="_blank">IPv4 addresses are exhausting</a> and many users are getting their access to the web through the NAT and bad neighbour activity can result in getting everyone in certain NAT blocked which is not what you probably want)
+
+```typescript
+import express from 'express'
+import umbress from 'umbress'
+
+const app = express()
+
+app.use(express.urlencoded({ extended: true }))
+
+app.use(
+  umbress({
+    checkSuspiciousAddresses: {
+      enabled: true,
+      token: process.env.ABUSEIPDB_TOKEN,
+      action: 'check'
+    }
+  })
+)
+```
+
+## License
+
+Copyright 2020 JamesJGoodwin. Licensed <a href="https://github.com/JamesJGoodwin/umbress/blob/master/LICENSE">MIT</a>.
