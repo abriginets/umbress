@@ -32,7 +32,16 @@ jobs:
         run: npm run test
         env:
           ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
+      - uses: coverallsapp/github-action@v1.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel: true
+
+  coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: coverallsapp/github-action@v1.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
