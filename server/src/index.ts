@@ -117,7 +117,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
             res: res,
             proxyTrusted: options.isProxyTrusted,
             umbressCookieName: UMBRESS_COOKIE_NAME,
-            proxyHostname: PROXY_HOSTNAME,
+            proxyHostname: PROXY_HOSTNAME.replace('www.', ''),
             proxyProto: PROXY_PROTO,
             template: pugs.frame,
             content: options.advancedClientChallenging.content
@@ -184,7 +184,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                     return res
                         .cookie(CLEARANCE_COOKIE_NAME, uuidv4(), {
                             expires: new Date(parseInt(req.query['__umbuid'].split('_')[1]) * 1000),
-                            domain: '.' + (options.isProxyTrusted ? req.headers[PROXY_HOSTNAME] : req.hostname),
+                            domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
                             httpOnly: true,
                             sameSite: 'Lax',
                             secure: options.isProxyTrusted
@@ -194,7 +194,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                         .redirect(
                             301,
                             `${options.isProxyTrusted ? req.headers[PROXY_PROTO] : req.protocol}://${
-                                options.isProxyTrusted ? req.headers[PROXY_HOSTNAME] : req.hostname
+                                options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname
                             }${req.path}`
                         )
                 }
