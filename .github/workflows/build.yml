@@ -38,7 +38,7 @@ jobs:
           parallel: true
 
   coverage:
-    needs: test
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: coverallsapp/github-action@v1.0.1
