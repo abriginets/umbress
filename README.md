@@ -7,6 +7,9 @@
     <a href="https://coveralls.io/github/JamesJGoodwin/umbress?branch=master" target="_blank">
       <img src="https://coveralls.io/repos/github/JamesJGoodwin/umbress/badge.svg?branch=master" />
     </a>
+    <a href="https://david-dm.org/JamesJGoodwin/umbress" target="_blank">
+      <img src="https://david-dm.org/JamesJGoodwin/umbress.svg" />
+    </a>
     <a href="https://www.npmjs.com/package/umbress" target="_blank">
       <img src="https://img.shields.io/npm/v/umbress.svg" />
     </a>
