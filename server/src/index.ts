@@ -122,7 +122,8 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
             proxyProto: PROXY_PROTO,
             template: pugs.frame,
             content: options.advancedClientChallenging.content,
-            cache: redis
+            cache: redis,
+            cookieTtl: options.advancedClientChallenging.cookieTtl
         }
 
         /**
@@ -292,7 +293,10 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                     if (options.checkSuspiciousAddresses.action === 'block') {
                         return res.status(403).end()
                     } else if (options.checkSuspiciousAddresses.action === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendInitial({
+                            ...initialOpts,
+                            ...{ cookieTtl: options.checkSuspiciousAddresses.cookieTtl }
+                        })
                     }
                 }
             }

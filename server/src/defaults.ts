@@ -57,7 +57,11 @@ export function defaults(contentForAutomated: string): UmbressOptions {
 
             /** Time to ban IP if it was detected as suspicious */
 
-            banFor: 3600
+            banFor: 3600,
+
+            /** Time for cookie to live in user's web browser */
+
+            cookieTtl: 1
         },
 
         /** Automated browser checking. Special page will be shown to user to pass JS challenge. Thisd is full automatic */
@@ -66,6 +70,10 @@ export function defaults(contentForAutomated: string): UmbressOptions {
             /** Is option above enabled - boolean */
 
             enabled: false,
+
+            /** Time for cookie to live in user's web browser */
+
+            cookieTtl: 30,
 
             /** Message for user - html or simple string */
 
