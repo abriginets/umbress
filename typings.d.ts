@@ -17,6 +17,7 @@ export interface UmbressOptions {
         token?: string
         action?: 'block' | 'check'
         banFor?: number
+        cookieTtl?: 1
     }
     advancedClientChallenging?: {
         enabled: boolean
