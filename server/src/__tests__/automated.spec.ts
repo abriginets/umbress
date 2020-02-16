@@ -91,6 +91,27 @@ describe('test automated browser checking', function() {
             /name="sk"\svalue="([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})"/
         )[1]
 
+        /**
+         * Test coverage for cached uuid value
+         */
+
+        const resCached = await request(app)
+            .get('/')
+            .expect('Content-type', /html/)
+            .expect(503)
+            .expect('Set-Cookie', cookieRegex)
+            .expect(/Checking your browser before accessing the website/)
+
+        const uuidCached = resCached.text.match(
+            /name="sk"\svalue="([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})"/
+        )[1]
+
+        expect(uuidCached).toEqual(uuid)
+
+        /**
+         * Test coverage end
+         */
+
         const nums: number[] = [],
             symb: string[] = []
 

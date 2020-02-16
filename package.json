@@ -27,7 +27,9 @@
     "server/dist",
     "templates",
     "public/dist",
-    "typings.d.ts"
+    "typings.d.ts",
+    "README.md",
+    "LICENSE"
   ],
   "types": "typings.d.ts",
   "repository": {

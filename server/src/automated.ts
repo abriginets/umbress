@@ -2,8 +2,9 @@
  * Core Modules
  */
 
-import { compileTemplate } from 'pug'
 import uuidv4 from 'uuid/v4'
+import { Redis } from 'ioredis'
+import { compileTemplate } from 'pug'
 import { Request, Response } from 'express'
 
 /**
@@ -17,6 +18,7 @@ import { getAdvancedAssets } from './helpers'
  */
 
 export interface Opts {
+    ip: string
     req: Request
     res: Response
     proxyTrusted: boolean
@@ -25,19 +27,30 @@ export interface Opts {
     proxyProto: string
     template: compileTemplate
     content: string
+    cache: Redis
 }
 
-export function sendInitial(options: Opts): Response {
+export async function sendInitial(options: Opts): Promise<Response> {
     const hash = []
-    const uuid = uuidv4()
     const dict = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+
+    const uuidCacheKey = 'uuidCache_' + options.ip + '_' + options.req.headers['user-agent']
+    let uuid = ''
+
+    const cachedUuid = await options.cache.get(uuidCacheKey)
+
+    if (cachedUuid !== null) {
+        uuid = cachedUuid
+    } else {
+        uuid = uuidv4()
+        await options.cache.set(uuidCacheKey, uuid, 'EX', 4)
+    }
 
     for (let i = 0; i < 128; i++) {
         hash.push(dict.charAt(Math.floor(Math.random() * dict.length)))
     }
 
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
-    //const expires = new Date(Date.now() + 1000 * 20) // 20 seconds cache for debugging
 
     return options.res
         .status(503)
