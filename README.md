@@ -112,7 +112,8 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(
   umbress({
     advancedClientChallenging: {
-      enabled: true
+      enabled: true,
+      cookieTtl: 30
     }
   })
 )
@@ -139,7 +140,8 @@ app.use(
     checkSuspiciousAddresses: {
       enabled: true,
       token: process.env.ABUSEIPDB_TOKEN,
-      action: 'check'
+      action: 'check',
+      cookieTtl: 1
     }
   })
 )
