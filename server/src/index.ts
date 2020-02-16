@@ -113,6 +113,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
         let bypassChecking = false
 
         const initialOpts: AutomatedOpts = {
+            ip: ip,
             req: req,
             res: res,
             proxyTrusted: options.isProxyTrusted,
@@ -120,7 +121,8 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
             proxyHostname: PROXY_HOSTNAME.replace('www.', ''),
             proxyProto: PROXY_PROTO,
             template: pugs.frame,
-            content: options.advancedClientChallenging.content
+            content: options.advancedClientChallenging.content,
+            cache: redis
         }
 
         /**
@@ -163,8 +165,8 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
 
         if (options.advancedClientChallenging.enabled === true) {
             if (req.method === 'POST' && '__umbuid' in req.query) {
-                if (!req.body) return sendInitial(initialOpts)
-                if (!('sk' in req.body) || !('jschallenge' in req.body)) return sendInitial(initialOpts)
+                if (!req.body) return await sendInitial(initialOpts)
+                if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendInitial(initialOpts)
 
                 const bd: { sk: string; jschallenge: string } = req.body
 
@@ -198,7 +200,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                             }${req.path}`
                         )
                 }
-                return sendInitial(initialOpts)
+                return await sendInitial(initialOpts)
             } else {
                 if (
                     (!!req.headers.cookie &&
@@ -208,7 +210,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                 ) {
                     return next()
                 } else {
-                    return sendInitial(initialOpts)
+                    return await sendInitial(initialOpts)
                 }
             }
         }
@@ -290,7 +292,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                     if (options.checkSuspiciousAddresses.action === 'block') {
                         return res.status(403).end()
                     } else if (options.checkSuspiciousAddresses.action === 'check') {
-                        return sendInitial(initialOpts)
+                        return await sendInitial(initialOpts)
                     }
                 }
             }
