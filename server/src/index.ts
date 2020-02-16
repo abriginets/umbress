@@ -122,7 +122,8 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
             proxyProto: PROXY_PROTO,
             template: pugs.frame,
             content: options.advancedClientChallenging.content,
-            cache: redis
+            cache: redis,
+            cookieTtl: options.advancedClientChallenging.cookieTtl
         }
 
         /**

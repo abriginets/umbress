@@ -20,6 +20,7 @@ export interface UmbressOptions {
     }
     advancedClientChallenging?: {
         enabled: boolean
+        cookieTtl?: number
         content?: string
         cache?: 'redis'
         cacheHost?: string

@@ -67,6 +67,10 @@ export function defaults(contentForAutomated: string): UmbressOptions {
 
             enabled: false,
 
+            /** Time for cookie to live in user's web browser */
+
+            cookieTtl: 30,
+
             /** Message for user - html or simple string */
 
             content: contentForAutomated,

@@ -28,6 +28,7 @@ export interface Opts {
     template: compileTemplate
     content: string
     cache: Redis
+    cookieTtl: number
 }
 
 export async function sendInitial(options: Opts): Promise<Response> {
@@ -50,7 +51,7 @@ export async function sendInitial(options: Opts): Promise<Response> {
         hash.push(dict.charAt(Math.floor(Math.random() * dict.length)))
     }
 
-    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * options.cookieTtl)
 
     return options.res
         .status(503)
