@@ -35,7 +35,7 @@ of detection and mitigation like crawlers authenticity checks, malicious IP addr
 
 - Node.js 10+
 - <a href="https://github.com/expressjs/express" target="_blank">Express</a> 4+
-- Redis 4+
+- <a href="https://redis.io/" target="_blank">Redis</a> 4+
 
 ## Install
 
