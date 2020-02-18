@@ -23,6 +23,7 @@ export interface UmbressOptions {
         enabled: boolean
         cookieTtl?: number
         content?: string
+        userAgentsWhitelist?: RegExp
         cache?: 'redis'
         cacheHost?: string
         cachePort?: number

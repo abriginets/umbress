@@ -185,6 +185,12 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
             if (options.advancedClientChallenging.enabled) {
                 bypassChecking = true
             }
+        } else if (options.advancedClientChallenging.userAgentsWhitelist.toString() !== '/emptyRegExp/') {
+            if (options.advancedClientChallenging.userAgentsWhitelist.test(req.headers['user-agent'])) {
+                if (options.advancedClientChallenging.enabled) {
+                    bypassChecking = true
+                }
+            }
         }
 
         if (options.advancedClientChallenging.enabled === true) {
