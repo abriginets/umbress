@@ -79,6 +79,10 @@ export function defaults(contentForAutomated: string): UmbressOptions {
 
             content: contentForAutomated,
 
+            /** Whitelisted User-Agents */
+
+            userAgentsWhitelist: /emptyRegExp/,
+
             /** This is caching layer to store bots and crawlers IP addresses */
 
             cache: 'redis',

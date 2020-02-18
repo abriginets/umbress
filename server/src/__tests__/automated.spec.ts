@@ -139,3 +139,30 @@ describe('test automated browser checking', function() {
         done()
     })
 })
+
+describe('allow users with admin-allowed user-agent to bypass automated check', function() {
+    const app = express()
+
+    app.use(
+        umbress({
+            advancedClientChallenging: {
+                enabled: true,
+                userAgentsWhitelist: /myTestBot/
+            }
+        })
+    )
+
+    app.get('/', function(req: Request, res: Response) {
+        res.send('Challenge passed!')
+    })
+
+    it('should allow access', async done => {
+        await request(app)
+            .get('/')
+            .set('User-Agent', 'myTestBot 2.0 (+https://www.example.com/mytestbot)')
+            .expect(200)
+            .expect('Challenge passed!')
+
+        done()
+    })
+})

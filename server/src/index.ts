@@ -34,9 +34,28 @@ import { checkAddress } from './abuseipdb'
  */
 
 const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/\d{1,3}$/
-// allowed crawlers by default: Google, Yandex, Bing, MSN, Baidu, Mail.ru
-const BOTS_USERAGENT_REGEX = /(Googlebot|AdsBot-Google)|Yandex(Webmaster|Bot)|bingbot|msnbot|Baiduspider|Mail\.RU_Bot/
-const BOTS_HOSTNAME_REGEX = /(google(bot)?.com|yandex\.(com|net|ru)|search\.msn\.com|crawl\.baidu\.com|mail\.ru)$/
+
+/**
+ * Whitelisted crawlers:
+ * Google
+ * Yandex
+ * Bing
+ * Baidu
+ * Mail.ru
+ * Applebot
+ */
+
+const BOTS_USERAGENT_REGEX = /(Googlebot|AdsBot-Google)|Yandex(Webmaster|Bot|Metrika)|bingbot|msnbot|Baiduspider|Mail\.RU_Bot|Applebot/
+const BOTS_HOSTNAME_REGEX = /(google(bot)?.com|yandex\.(com|net|ru)|search\.msn\.com|crawl\.baidu\.com|mail\.ru|applebot\.apple\.com)$/
+
+/**
+ * Social Network Bots:
+ * VK.com
+ * Facebook
+ * Twitter
+ */
+
+const NON_HOSTNAMEABLE_BOTS = /Twitterbot|facebookexternalhit|vkShare/
 
 const pugs: PugTemplates = {}
 const templatesPath = path.join(__dirname + '/../../templates/')
@@ -160,6 +179,16 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
                         }
                     }
                     break
+                }
+            }
+        } else if (NON_HOSTNAMEABLE_BOTS.test(req.headers['user-agent'])) {
+            if (options.advancedClientChallenging.enabled) {
+                bypassChecking = true
+            }
+        } else if (options.advancedClientChallenging.userAgentsWhitelist.toString() !== '/emptyRegExp/') {
+            if (options.advancedClientChallenging.userAgentsWhitelist.test(req.headers['user-agent'])) {
+                if (options.advancedClientChallenging.enabled) {
+                    bypassChecking = true
                 }
             }
         }

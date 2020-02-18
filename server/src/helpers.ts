@@ -21,7 +21,7 @@ export const merge = (defaults: UmbressOptions, options: UmbressOptions): Umbres
 
     for (const key in options) {
         if (key in options) {
-            if (options[key] instanceof Object && !Array.isArray(options[key])) {
+            if (options[key] instanceof Object && !Array.isArray(options[key]) && !(options[key] instanceof RegExp)) {
                 result[key] = merge(result[key], options[key])
             } else {
                 result[key] = options[key]
