@@ -15,7 +15,7 @@
     "clean-client": "rimraf public/dist",
     "build:skip-tests": "run-s clean-server clean-client build-server build-client",
     "build-server:skip-tests": "run-s clean-server compile-server",
-    "test": "jest --config config/jest.js --forceExit",
+    "test": "jest --coverage --config config/jest.js --forceExit",
     "test:debug": "jest --detectOpenHandles --runInBand --config config/jest.js"
   },
   "keywords": [
