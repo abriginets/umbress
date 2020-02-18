@@ -20,28 +20,31 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
+
       - name: Setup Redis
         uses: shogo82148/actions-setup-redis@v1
         with:
           redis-version: '4.x'
+
       - name: Install
         run: npm install
+
       - name: Build
         run: npm run build:skip-tests
+
       - name: Test
         run: npm run test
         env:
           ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
-      - uses: coverallsapp/github-action@v1.0.1
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel: true
 
-  coverage:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: coverallsapp/github-action@v1.0.1
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
+          parallel-finished: true 
