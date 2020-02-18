@@ -12,7 +12,8 @@ const BOTS = {
     yandex: '178.154.171.136',
     bing: '157.55.39.199',
     baidu: '180.76.5.59',
-    mailru: '95.163.255.29'
+    mailru: '95.163.255.29',
+    twitter: '199.16.157.182'
 }
 
 const USERAGENTS = {
@@ -20,7 +21,8 @@ const USERAGENTS = {
     yandex: 'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
     bing: 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
     baidu: 'Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)',
-    mailru: 'Mozilla/5.0 (compatible; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots);'
+    mailru: 'Mozilla/5.0 (compatible; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots);',
+    twitter: 'Twitterbot/1.0'
 }
 
 beforeAll(async done => {
@@ -184,6 +186,35 @@ describe('test crawlers access', function() {
             .set({
                 'User-Agent': USERAGENTS.mailru,
                 'X-Forwarded-For': BOTS.mailru
+            })
+            .expect(200)
+
+        done()
+    })
+})
+
+describe('it should allow access for twitterbot', function() {
+    const app = express()
+
+    app.use(
+        umbress({
+            isProxyTrusted: true,
+            advancedClientChallenging: {
+                enabled: true
+            }
+        })
+    )
+
+    app.get('/', function(req, res) {
+        res.send('Hello, bot')
+    })
+
+    it('should return 200', async done => {
+        await request(app)
+            .get('/')
+            .set({
+                'User-Agent': USERAGENTS.twitter,
+                'X-Forwarded-For': BOTS.twitter
             })
             .expect(200)
 
