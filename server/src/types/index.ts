@@ -30,8 +30,6 @@ export interface UmbressOptions {
     }
 }
 
-type messageObj = { [key: string]: any } | string
-
 export interface AbuseIPDBResponse {
     data: {
         ipAddress: string

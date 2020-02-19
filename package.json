@@ -1,6 +1,6 @@
 {
   "name": "umbress",
-  "version": "1.1.4",
+  "version": "1.1.6",
   "description": "Dynamic and flexible Express anti-DDoS middleware",
   "main": "server/dist/index.js",
   "scripts": {
@@ -27,11 +27,10 @@
     "server/dist",
     "templates",
     "public/dist",
-    "typings.d.ts",
     "README.md",
     "LICENSE"
   ],
-  "types": "typings.d.ts",
+  "types": "server/dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JamesJGoodwin/umbress.git"
