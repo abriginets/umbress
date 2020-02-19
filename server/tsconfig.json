@@ -1,11 +1,11 @@
 {
     "extends": "../tsconfig.json",
     "compilerOptions": {
-        "module": "AMD",
-        "target": "ES2018",
+        "module": "commonjs",
+        "target": "ES2015",
         "outDir": "./dist",
-        "outFile": "./dist/index.js",
         "rootDir": "./src",
-        "baseUrl": "../"
+        "baseUrl": "../",
+        "declaration": true
     }
 }

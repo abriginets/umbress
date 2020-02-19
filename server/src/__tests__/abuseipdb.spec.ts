@@ -1,7 +1,7 @@
 import delay from 'delay'
 import dotenv from 'dotenv'
 import express from 'express'
-import umbress from '../index'
+import umbress from '../../dist/index'
 import request from 'supertest'
 import Redis from 'ioredis'
 

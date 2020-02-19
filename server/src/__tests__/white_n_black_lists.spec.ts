@@ -1,6 +1,6 @@
 import request from 'supertest'
 import express from 'express'
-import umbress from '../index'
+import umbress from '../../dist/index'
 
 describe('Whitelist and blacklist tests', function() {
     it('should allow ip to pass and restrict other ip`s access', async done => {

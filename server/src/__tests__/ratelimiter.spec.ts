@@ -1,6 +1,6 @@
 import request from 'supertest'
 import express from 'express'
-import umbress from '../index'
+import umbress from '../../dist/index'
 import delay from 'delay'
 
 const app = express()
