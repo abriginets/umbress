@@ -254,7 +254,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                 if (isIpInList(ip, options.whitelist)) return next()
             }
 
-            res.status(403).end()
+            return res.status(403).end()
         }
 
         if (options.blacklist.length > 0) {
@@ -269,7 +269,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
             }
 
             if (toBlock) {
-                res.status(403).end()
+                return res.status(403).end()
             }
         }
 
@@ -279,7 +279,8 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
             if (cachedIpData !== null) {
                 const ttl = new Date(Math.round(new Date().valueOf() / 1000) + (await redis.ttl(ratelimiterJailKey)))
 
-                res.status(429)
+                return res
+                    .status(429)
                     .set({
                         'Retry-After': ttl.toUTCString()
                     })
@@ -297,7 +298,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                             console.log(`[umbress] Banned ${ip} for ${options.rateLimiter.banFor} seconds`)
                         }
 
-                        res.status(429).end()
+                        return res.status(429).end()
                     } else {
                         queue[ip]++
                     }
