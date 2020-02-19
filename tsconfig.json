@@ -13,11 +13,11 @@
         "moduleResolution": "node",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "noImplicitAny": true,
-        "declaration": true
+        "noImplicitAny": true
     },
     "exclude": [
         "server/src/__tests__",
+        "server/src/automated_test_.ts",
         "node_modules",
         "server/dist",
         "public/dist"

@@ -15,7 +15,7 @@ import pug from 'pug'
 import path from 'path'
 import Redis from 'ioredis'
 import uuidv4 from 'uuid/v4'
-import { Request, Response, NextFunction } from 'express'
+import { Request as Req, Response as Res, NextFunction as Next } from 'express'
 
 import { promises as dns } from 'dns'
 
@@ -78,7 +78,7 @@ const UMBRESS_COOKIE_NAME = '__umbuuid'
 const PROXY_HOSTNAME = 'X-Forwarded-Hostname'
 const PROXY_PROTO = 'X-Forwarded-Proto'
 
-export default function(instanceOptions: UmbressOptions): (req: Request, res: Response, next: NextFunction) => void {
+export default function umbress(instanceOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
     const defaultOptions = defaults(pugs.face())
     const options = merge(defaultOptions, instanceOptions)
 
@@ -124,7 +124,7 @@ export default function(instanceOptions: UmbressOptions): (req: Request, res: Re
         }, (options.rateLimiter.per / options.rateLimiter.requests) * 1000)
     }
 
-    return async function(req: Request, res: Response, next: NextFunction): Promise<void | NextFunction | Response> {
+    return async function(req: Req, res: Res, next: Next): Promise<void | Next | Res> {
         const ip = getAddress(req, options.isProxyTrusted)
         const ratelimiterJailKey = 'jail_' + ip
         const suspiciousJailKey = 'abuseipdb_' + ip

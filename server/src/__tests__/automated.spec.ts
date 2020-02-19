@@ -1,6 +1,6 @@
 import request from 'supertest'
 import express, { Request, Response } from 'express'
-import umbress from '../index'
+import umbress from '../../dist/index'
 
 describe('validate automated browser checking options', function() {
     const app = express()
