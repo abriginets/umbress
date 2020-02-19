@@ -4,7 +4,7 @@
  * MIT Licensed
  */
 
-import { UmbressOptions, PugTemplates } from '../../typings'
+import { UmbressOptions, PugTemplates } from './types'
 
 /**
  * Core Modules

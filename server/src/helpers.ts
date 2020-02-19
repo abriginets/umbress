@@ -2,7 +2,7 @@
  * Core Modules
  */
 
-import { UmbressOptions } from '../../typings'
+import { UmbressOptions } from './types'
 
 import fs from 'fs'
 import path from 'path'

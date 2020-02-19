@@ -2,7 +2,7 @@
  * Core Modules
  */
 
-import { UmbressOptions, AbuseIPDBResponse } from '../../typings'
+import { UmbressOptions, AbuseIPDBResponse } from './types'
 
 import fetch from 'node-fetch'
 import { Redis } from 'ioredis'

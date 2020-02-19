@@ -1,4 +1,4 @@
-import { UmbressOptions } from '../../typings'
+import { UmbressOptions } from './types'
 
 export function defaults(contentForAutomated: string): UmbressOptions {
     const defaults: UmbressOptions = {
