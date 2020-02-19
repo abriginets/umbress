@@ -1,8 +1,10 @@
 {
     "extends": "../tsconfig.json",
     "compilerOptions": {
+        "module": "AMD",
         "target": "ES2018",
         "outDir": "./dist",
+        "outFile": "./dist/index.js",
         "rootDir": "./src",
         "baseUrl": "../"
     }
