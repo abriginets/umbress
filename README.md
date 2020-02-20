@@ -13,9 +13,6 @@
     <a href="https://www.npmjs.com/package/umbress" target="_blank">
       <img src="https://img.shields.io/npm/v/umbress.svg" />
     </a>
-    <a href="https://packagephobia.now.sh/result?p=umbress" target="_blank">
-      <img src="https://packagephobia.now.sh/badge?p=umbress" />
-    </a>
   </div>
   </br>
   </br>
