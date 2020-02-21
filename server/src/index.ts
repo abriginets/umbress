@@ -11,6 +11,7 @@ import { UmbressOptions, PugTemplates } from './types'
  */
 
 import fs from 'fs'
+import net from 'net'
 import pug from 'pug'
 import path from 'path'
 import Redis from 'ioredis'
@@ -33,7 +34,8 @@ import { checkAddress } from './abuseipdb'
  * Logic
  */
 
-const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/\d{1,3}$/
+const ipv4SubnetRegexp = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/\d{1,3}$/
+const ipv6SubnetRegexp = /^s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(%.+)?s*(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$/
 
 /**
  * Whitelisted crawlers:
@@ -45,7 +47,7 @@ const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0
  * Applebot
  */
 
-const BOTS_USERAGENT_REGEX = /(Googlebot|AdsBot-Google)|Yandex(Webmaster|Bot|Metrika)|bingbot|msnbot|Baiduspider|Mail\.RU_Bot|Applebot/
+const BOTS_USERAGENT_REGEX = /((AdsBot-)?Google(bot)?)|Yandex(Webmaster|Bot|Metrika)|(bing|msn)bot|Baiduspider|Mail\.RU_Bot|Applebot/
 const BOTS_HOSTNAME_REGEX = /(google(bot)?.com|yandex\.(com|net|ru)|search\.msn\.com|crawl\.baidu\.com|mail\.ru|applebot\.apple\.com)$/
 
 /**
@@ -90,19 +92,20 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
         keyPrefix: 'umbress_'
     })
 
-    const subnets: Array<string> = []
+    const ipv4Subnets: Array<string> = []
+    const ipv6Subnets: Array<string> = []
 
     if (options.whitelist.length > 0 || options.blacklist.length > 0) {
         let key = ''
 
         if (options.whitelist.length > 0) key = 'whitelist'
-        if (key.length === 0) {
-            if (options.blacklist.length > 0) key = 'blacklist'
-        }
+        if (key.length === 0 && options.blacklist.length > 0) key = 'blacklist'
 
-        for (let i = 0; i < options[key].length; i++) {
-            if (subnetRegex.test(options[key][i])) {
-                subnets.push(options[key][i])
+        for (const entry of options[key]) {
+            if (ipv4SubnetRegexp.test(entry)) {
+                ipv4Subnets.push(entry)
+            } else if (ipv6SubnetRegexp.test(entry)) {
+                ipv6Subnets.push(entry)
             }
         }
     }
@@ -175,7 +178,12 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                         }
                     } else {
                         if (!options.blacklist.includes(ip)) {
-                            options.blacklist.push(ip)
+                            if (options.advancedClientChallenging.enabled) {
+                                return await sendInitial(initialOpts)
+                            } else {
+                                options.blacklist.push(ip)
+                                return res.status(403).end()
+                            }
                         }
                     }
                     break
@@ -192,6 +200,10 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                 }
             }
         }
+
+        /**
+         * Advanced client challenging
+         */
 
         if (options.advancedClientChallenging.enabled === true) {
             if (req.method === 'POST' && '__umbuid' in req.query) {
@@ -245,33 +257,31 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
             }
         }
 
-        if (options.whitelist.length > 0) {
-            if (subnets.length > 0 && subnets.length === options.whitelist.length) {
-                if (isIpInSubnets(ip, subnets)) return next()
-            } else if (subnets.length > 0 && subnets.length !== options.whitelist.length) {
-                if (isIpInSubnets(ip, subnets) || isIpInList(ip, options.whitelist)) return next()
-            } else if (subnets.length === 0 && options.whitelist.length > 0) {
-                if (isIpInList(ip, options.whitelist)) return next()
-            }
+        /**
+         * White and blacklists
+         */
 
-            return res.status(403).end()
+        if (options.whitelist.length > 0) {
+            if (net.isIPv4(ip)) {
+                if (isIpInList(ip, options.whitelist) || (ipv4Subnets.length > 0 && isIpInSubnets(ip, ipv4Subnets))) {
+                    return next()
+                } else {
+                    return res.status(403).end()
+                }
+            }
         }
 
         if (options.blacklist.length > 0) {
-            let toBlock = false
-
-            if (subnets.length > 0 && subnets.length === options.blacklist.length) {
-                if (isIpInSubnets(ip, subnets)) toBlock = true
-            } else if (subnets.length > 0 && subnets.length !== options.blacklist.length) {
-                if (isIpInSubnets(ip, subnets) || isIpInList(ip, options.blacklist)) toBlock = true
-            } else if (subnets.length === 0 && options.blacklist.length > 0) {
-                if (isIpInList(ip, options.blacklist)) toBlock = true
-            }
-
-            if (toBlock) {
-                return res.status(403).end()
+            if (net.isIPv4(ip)) {
+                if (isIpInList(ip, options.blacklist) || (ipv4Subnets.length > 0 && isIpInSubnets(ip, ipv4Subnets))) {
+                    return res.status(403).end()
+                }
             }
         }
+
+        /**
+         * Ratelimiter
+         */
 
         if (options.rateLimiter.enabled) {
             const cachedIpData = await redis.get(ratelimiterJailKey)
