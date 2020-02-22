@@ -40,8 +40,6 @@ beforeAll(async done => {
 
 describe('Rate limiter', function() {
     it('exceed threshold, check bans, wait for unban', async done => {
-        /** 11 requests made to not allow queue to be released */
-
         for (let i = 0; i < 10; i++) {
             await request(app)
                 .get('/')
@@ -54,7 +52,17 @@ describe('Rate limiter', function() {
             await delay(300)
         }
 
-        // this test is needed to check ban based on data cached by redis
+        // confirm ban and check cached results
+        await request(app)
+            .get('/')
+            .set({
+                Accept: 'application/json',
+                'X-Forwarded-For': '12.34.56.78'
+            })
+            .expect(429)
+
+        await delay(500)
+
         await request(app)
             .get('/')
             .set({

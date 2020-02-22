@@ -274,21 +274,11 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
             const ipKeys = await redis.keys(CACHE_PREFIX + ratelimiterCacheKey + '_*')
             const nowRaw = new Date().valueOf()
             const now = Math.round(nowRaw / 1000)
+            const isBannedAlready = ipKeys.length === 1 && ipKeys[0].endsWith('banned')
 
-            if (ipKeys.length >= options.rateLimiter.requests) {
-                // if IP address in queue
-                let isBanned = false
-                let bannedKey = ''
-
-                for (const ipKey of ipKeys) {
-                    if (ipKey.endsWith('banned')) {
-                        isBanned = true
-                        bannedKey = ipKey
-                        break
-                    }
-                }
-
-                if (isBanned) {
+            if (ipKeys.length >= options.rateLimiter.requests || isBannedAlready) {
+                if (isBannedAlready) {
+                    const bannedKey = await redis.get(ipKeys[0])
                     // if IP address marked as banned
                     const bannedUntil = parseInt(await redis.get(bannedKey))
 

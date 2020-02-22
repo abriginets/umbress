@@ -122,6 +122,13 @@ describe('test automated browser checking', function() {
 
         const answer = nums.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) * symb.length
 
+        // send incomplete body
+        await request(app)
+            .post('/?__umbuid=' + action)
+            .send(`sk=${uuid}`)
+            .set('Cookie', umbuuid)
+            .expect(503)
+
         const resTwo = await request(app)
             .post('/?__umbuid=' + action)
             .send(`sk=${uuid}&jschallenge=${answer.toString()}`)
