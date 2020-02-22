@@ -94,7 +94,8 @@ export function defaults(contentForAutomated: string): UmbressOptions {
             /** Redis server port */
 
             cachePort: 6379
-        }
+        },
+        geoipRules: []
     }
 
     return defaults

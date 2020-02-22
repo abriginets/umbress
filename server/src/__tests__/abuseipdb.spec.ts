@@ -51,12 +51,35 @@ describe('send request with malicious IP, get response with automated check', fu
 
         await delay(5000)
 
-        await request(app)
+        const checkingRes = await request(app)
             .get('/')
             .set('X-Forwarded-For', '222.186.42.155')
             .expect('Content-type', /html/)
             .expect(503)
             .expect(/Checking your browser before accessing the website/)
+
+        const [umbuuid] = checkingRes.header['set-cookie']
+        const action = checkingRes.text.match(/action="\?__umbuid=(.+?)"/)[1]
+
+        const uuid = checkingRes.text.match(
+            /name="sk"\svalue="([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})"/
+        )[1]
+
+        const nums: number[] = [],
+            symb: string[] = []
+
+        uuid.split('').forEach(s => {
+            if (s in '0123456789'.split('')) nums.push(parseInt(s))
+            else symb.push(s)
+        })
+
+        const answer = nums.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) * symb.length
+
+        await request(app)
+            .post('/?__umbuid=' + action)
+            .send(`sk=${uuid}&jschallenge=${answer.toString()}`)
+            .set('Cookie', umbuuid)
+            .expect(301)
 
         done()
     }, 10_000)

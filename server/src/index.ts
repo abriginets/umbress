@@ -188,10 +188,37 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
         }
 
         /**
+         * GeoIP blocking
+         */
+
+        if ('X-Umbress-Country' in req.headers && options.geoipRules.length > 0) {
+            for (const rule of options.geoipRules) {
+                if (req.headers['X-Umbress-Country'] in rule.codes) {
+                    if (rule.behavior === 'whitelist') {
+                        if (options.advancedClientChallenging.enabled && rule.action === 'pass') {
+                            bypassChecking === true
+                        } else if (!options.advancedClientChallenging.enabled && rule.action === 'check') {
+                            return await sendInitial(initialOpts)
+                        }
+                    } else {
+                        if (!options.advancedClientChallenging.enabled && rule.action === 'check') {
+                            return await sendInitial(initialOpts)
+                        } else {
+                            return res.status(403).end()
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
          * Advanced client challenging
          */
 
-        if (options.advancedClientChallenging.enabled === true) {
+        const isFirstCookie = !!req.headers.cookie && req.headers.cookie.includes(UMBRESS_COOKIE_NAME)
+        const allCookies = isFirstCookie && req.headers.cookie.includes(CLEARANCE_COOKIE_NAME)
+
+        if (options.advancedClientChallenging.enabled === true || (isFirstCookie && !allCookies)) {
             if (req.method === 'POST' && '__umbuid' in req.query) {
                 if (!req.body) return await sendInitial(initialOpts)
                 if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendInitial(initialOpts)
@@ -230,16 +257,8 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                 }
                 return await sendInitial(initialOpts)
             } else {
-                if (
-                    (!!req.headers.cookie &&
-                        req.headers.cookie.includes(UMBRESS_COOKIE_NAME) &&
-                        req.headers.cookie.includes(CLEARANCE_COOKIE_NAME)) ||
-                    bypassChecking === true
-                ) {
-                    return next()
-                } else {
-                    return await sendInitial(initialOpts)
-                }
+                if (allCookies || bypassChecking === true) return next()
+                else return await sendInitial(initialOpts)
             }
         }
 

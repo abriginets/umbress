@@ -28,11 +28,11 @@ export interface UmbressOptions {
         cacheHost?: string
         cachePort?: number
     }
-    geoip?: {
+    geoipRules?: Array<{
         behavior?: 'whitelist' | 'blacklist'
         codes?: Array<string>
         action?: 'block' | 'check' | 'pass'
-    }
+    }>
 }
 
 export interface AbuseIPDBResponse {
