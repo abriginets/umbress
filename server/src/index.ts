@@ -80,6 +80,8 @@ const UMBRESS_COOKIE_NAME = '__umbuuid'
 const PROXY_HOSTNAME = 'X-Forwarded-Hostname'
 const PROXY_PROTO = 'X-Forwarded-Proto'
 
+const CACHE_PREFIX = 'umbress_'
+
 export default function umbress(instanceOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
     const defaultOptions = defaults(pugs.face())
     const options = merge(defaultOptions, instanceOptions)
@@ -89,7 +91,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
     const redis = new Redis({
         host: options.advancedClientChallenging.cacheHost,
         port: options.advancedClientChallenging.cachePort,
-        keyPrefix: 'umbress_'
+        keyPrefix: CACHE_PREFIX
     })
 
     const ipv4Subnets: Array<string> = []
@@ -110,27 +112,11 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
         }
     }
 
-    /**
-     * Decrementing queue. The formula is time / requests * 1000
-     * The lower req/s ratio is - the less frequent queue is releasing ips from queue and jail
-     */
-
-    const queue = {}
-
-    if (options.rateLimiter.enabled) {
-        setInterval(() => {
-            for (const ip in queue) {
-                if (queue[ip] <= 0) {
-                    delete queue[ip]
-                } else queue[ip]--
-            }
-        }, (options.rateLimiter.per / options.rateLimiter.requests) * 1000)
-    }
-
     return async function(req: Req, res: Res, next: Next): Promise<void | Next | Res> {
         const ip = getAddress(req, options.isProxyTrusted)
-        const ratelimiterJailKey = 'jail_' + ip
-        const suspiciousJailKey = 'abuseipdb_' + ip
+
+        const ratelimiterCachePrefix = 'ratelimiter_'
+        const suspiciousJailPrefix = 'abuseipdb_'
         const botsKey = 'bot_' + ip
         let bypassChecking = false
 
@@ -284,37 +270,67 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
          */
 
         if (options.rateLimiter.enabled) {
-            const cachedIpData = await redis.get(ratelimiterJailKey)
+            const ratelimiterCacheKey = ratelimiterCachePrefix + ip
+            const ipKeys = await redis.keys(CACHE_PREFIX + ratelimiterCacheKey + '_*')
+            const nowRaw = new Date().valueOf()
+            const now = Math.round(nowRaw / 1000)
 
-            if (cachedIpData !== null) {
-                const ttl = new Date(Math.round(new Date().valueOf() / 1000) + (await redis.ttl(ratelimiterJailKey)))
+            if (ipKeys.length >= options.rateLimiter.requests) {
+                // if IP address in queue
+                let isBanned = false
+                let bannedKey = ''
 
-                return res
-                    .status(429)
-                    .set({
-                        'Retry-After': ttl.toUTCString()
-                    })
-                    .end()
-            } else {
-                if (ip in queue) {
-                    if (queue[ip] > options.rateLimiter.requests) {
-                        await redis.set(ratelimiterJailKey, 'banned', 'EX', options.rateLimiter.banFor)
-
-                        if (options.clearQueueAfterBan) {
-                            delete queue[ip]
-                        }
-
-                        if (options.logs === true) {
-                            console.log(`[umbress] Banned ${ip} for ${options.rateLimiter.banFor} seconds`)
-                        }
-
-                        return res.status(429).end()
-                    } else {
-                        queue[ip]++
+                for (const ipKey of ipKeys) {
+                    if (ipKey.endsWith('banned')) {
+                        isBanned = true
+                        bannedKey = ipKey
+                        break
                     }
-                } else {
-                    queue[ip] = 1
                 }
+
+                if (isBanned) {
+                    // if IP address marked as banned
+                    const bannedUntil = parseInt(await redis.get(bannedKey))
+
+                    // if IP still banned
+                    return res
+                        .status(429)
+                        .set({
+                            'Retry-After': new Date((now - bannedUntil) * 1000).toUTCString()
+                        })
+                        .end()
+                } else {
+                    // if IP reached threshold
+                    const bannedUntil = now + options.rateLimiter.banFor
+
+                    await redis.set(
+                        `${ratelimiterCacheKey}_${nowRaw}_banned`,
+                        bannedUntil,
+                        'EX',
+                        options.rateLimiter.banFor
+                    )
+
+                    if (options.rateLimiter.clearQueueAfterBan) {
+                        const pipeline = ['del']
+
+                        for (const ipKey of ipKeys) {
+                            if (!ipKey.endsWith('banned')) {
+                                pipeline.push(ipKey.replace(CACHE_PREFIX, ''))
+                            }
+                        }
+
+                        await redis.pipeline([pipeline]).exec()
+                    }
+
+                    return res
+                        .status(429)
+                        .set({
+                            'Retry-After': new Date(bannedUntil * 1000).toUTCString()
+                        })
+                        .end()
+                }
+            } else {
+                await redis.set(`${ratelimiterCacheKey}_${nowRaw}`, '', 'EX', options.rateLimiter.per)
             }
         }
 
@@ -323,6 +339,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
          */
 
         if (options.checkSuspiciousAddresses.enabled) {
+            const suspiciousJailKey = suspiciousJailPrefix + '_' + ip
             const ipData = await redis.get(suspiciousJailKey)
 
             if (ipData === null) {

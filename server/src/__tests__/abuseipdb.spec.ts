@@ -11,10 +11,15 @@ const redis = new Redis({
 
 dotenv.config()
 
-beforeEach(async done => {
-    await redis.del('abuseipdb_222.186.42.155')
-    await redis.del('abuseipdb_140.82.118.3')
-    await redis.del('abuseipdb_112.85.42.188')
+beforeAll(async done => {
+    const keys = await redis.keys('umbress_abuseipdb_*')
+    const command = ['del']
+
+    for (const key of keys) {
+        command.push(key.replace('umbress_', ''))
+    }
+
+    await redis.pipeline([command]).exec()
 
     done()
 })
@@ -41,7 +46,6 @@ describe('send request with malicious IP, get response with automated check', fu
         await request(app)
             .get('/')
             .set('X-Forwarded-For', '222.186.42.155')
-            .expect('Content-type', /html/)
             .expect(200)
             .expect('Access granted!')
 
@@ -116,7 +120,7 @@ describe('send request with bad IP, get blocked by 403', function() {
     it('should forbid access', async done => {
         await request(app)
             .get('/')
-            .set('X-Forwarded-For', '222.186.42.155')
+            .set('X-Forwarded-For', '222.186.190.92')
             .expect('Content-type', /html/)
             .expect(200)
             .expect('Access granted!')
@@ -125,7 +129,7 @@ describe('send request with bad IP, get blocked by 403', function() {
 
         await request(app)
             .get('/')
-            .set('X-Forwarded-For', '222.186.42.155')
+            .set('X-Forwarded-For', '222.186.190.92')
             .expect(403)
 
         done()

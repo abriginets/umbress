@@ -7,8 +7,8 @@ export interface UmbressOptions {
         requests?: number
         per?: number
         banFor?: number
+        clearQueueAfterBan?: boolean
     }
-    clearQueueAfterBan?: boolean
     logs?: boolean
     whitelist?: Array<string>
     blacklist?: Array<string>
@@ -27,6 +27,11 @@ export interface UmbressOptions {
         cache?: 'redis'
         cacheHost?: string
         cachePort?: number
+    }
+    geoip?: {
+        behavior?: 'whitelist' | 'blacklist'
+        codes?: Array<string>
+        action?: 'block' | 'check' | 'pass'
     }
 }
 
