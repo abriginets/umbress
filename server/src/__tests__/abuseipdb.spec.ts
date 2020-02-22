@@ -27,6 +27,8 @@ beforeAll(async done => {
 describe('send request with malicious IP, get response with automated check', function() {
     const app = express()
 
+    app.use(express.urlencoded({ extended: true }))
+
     app.use(
         umbress({
             isProxyTrusted: true,
