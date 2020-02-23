@@ -18,15 +18,16 @@
   </br>
 </div>
 
-<b>Umbress</b> is a fast and easy-to-use DDoS mitigation Express.js middleware. It has several techniques
-of detection and mitigation like crawlers authenticity checks, malicious IP addresses access mitigation (based on <a href="https://www.abuseipdb.com/" target="_blank">AbuseIPDB</a> data) and advanced client-side JavaScript challending.
+<b>Umbress</b> is a fast and easy-to-use DDoS protection and mitigation Express.js middleware. It has several techniques
+of detection and mitigation like crawlers authenticity checks, malicious IP addresses access mitigation (based on <a href="https://www.abuseipdb.com/" target="_blank">AbuseIPDB</a> data), advanced client-side JavaScript challenging, GeoIP manager, etc.
 
 ## Features
-- Adaptive rate-limiter
+- Rate-limiter
 - Malicious IP checker
 - Whitelists and blacklists for single IPs or subnets (currently IPv4 only)
-- Advanced JavaScript challenger (like CloudFlare's "Checking your browser")
+- Client-side JavaScript-challenging (like CloudFlare's UAM)
 - Crawlers authenticity checker
+- GeoIP manager
 
 ## Requirements
 
@@ -41,6 +42,17 @@ $ npm install umbress --save
 ```
 
 ## Usage
+
+**❗ Important:** Umbress relies on another middleware in some combinations of configuration so when you set `advancedClientChallenging.enabled = true`, `checkSuspiciousAddresses.action = 'check'`, `geoipRule.action = 'check'` and `geoipRule.otherwise = 'check'` it is mandatory to add the next lines of code:
+
+```typescript
+// ExpressJS above 4.16.0
+app.use(express.urlencoded({ extended: true }))
+
+// ExpressJS below 4.16.0
+import bodyParser from 'body-parser'
+app.use(bodyParser.urlencoded({ extended: false }))
+```
 
 #### Case #1: Simple rate-limiter
 Recommended to use only if you have no choice but to expose ExpressJS application without proxying all the traffic through Nginx, i.e.
@@ -83,7 +95,7 @@ app.use(
 #### Case #3 Automated browser checking
 Every user (except search engine's bots and crawlers) will be promted with automated client-side browser checks. This process is fully automatic and works just like CloudFlare's UAM. Visitors will be seeing pre-defined message, but you can easilly modify it by yourself.
 
-**Attention Nginx users!** If your ExpressJS app is behind Nginx then additional configuration is mandatory in order for this part of the module to work. Add next lines to your `location` directive:
+**Attention Nginx users!** If your ExpressJS app is behind Nginx then additional configuration is mandatory in order for this part of module to work. Add next lines to your `location` directive:
 
 ```nginx
 proxy_set_header X-Forwarded-Proto $scheme;
@@ -99,12 +111,7 @@ import umbress from 'umbress'
 
 const app = express()
 
-// ExpressJS above 4.16.0
 app.use(express.urlencoded({ extended: true }))
-
-// ExpressJS below 4.16.0
-import bodyParser from 'body-parser'
-app.use(bodyParser.urlencoded({ extended: false }))
 
 app.use(
   umbress({
@@ -116,7 +123,7 @@ app.use(
 )
 ```
 
-When users visiting your website for the first time, they will receive a unique cookie and will be seeing <a href="https://i.imgur.com/puUoVck.png" target="_blank">this page</a>. 5 seconds is needed to perform some computational tasks that only JavaScript-enabled visitors can solve. After 4-5 seconds the visitor will be redirected to the page by POSTing to it and receive the second cookie. Then the visitor be redirected to the requested URL immediatelly. Cookies TTL is 30 days, after it visitor will have to complete this challenge again.
+When users visiting your website for the first time, they will receive a unique cookie and will be seeing <a href="https://i.imgur.com/puUoVck.png" target="_blank">this page</a>. 5 seconds is needed to perform some computational tasks that only JavaScript-enabled visitors can solve. After 4-5 seconds the visitor will be redirected to the page by POSTing to it and receive the second cookie. Then visitor will be redirected to the requested URL immediatelly. Cookies TTL is 30 days, after it's expiration visitor will have to complete this challenge again.
 
 #### Case #4: Most complex and secure way
 
@@ -139,6 +146,48 @@ app.use(
       token: process.env.ABUSEIPDB_TOKEN,
       action: 'check',
       cookieTtl: 1
+    }
+  })
+)
+```
+
+### Case #5: Under heavy JS-based attack
+
+When someone wants your web application to go down really bad, they might use headless browsers to solve the client-side task, receive the cookies and use them to bypass automated checking. Under such circumstances you have no choice but to apply geographically-based blocking. For example, your website works in CIS area, but mostly attack originated from China:
+
+```typescript
+import express from 'express'
+import umbress from 'umbress'
+
+const app = express()
+
+app.use(
+  umbress({
+    geoipRule: {
+      type: 'whitelist',
+      codes: ['RU', 'UA', 'BY', 'KZ'],
+      action: 'pass',
+      otherwise: 'block'
+    }
+  })
+)
+```
+
+Blacklisting is available as well:
+
+```typescript
+import express from 'express'
+import umbress from 'umbress'
+
+const app = express()
+
+app.use(
+  umbress({
+    geoipRule: {
+      type: 'blacklist',
+      codes: ['CN'],
+      action: 'block',
+      otherwise: 'pass'
     }
   })
 )
