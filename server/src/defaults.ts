@@ -95,7 +95,12 @@ export function defaults(contentForAutomated: string): UmbressOptions {
 
             cachePort: 6379
         },
-        geoipRules: []
+        geoipRule: {
+            type: 'whitelist',
+            codes: [],
+            action: 'pass',
+            otherwise: 'pass'
+        }
     }
 
     return defaults

@@ -28,12 +28,15 @@ export interface UmbressOptions {
         cacheHost?: string
         cachePort?: number
     }
-    geoipRules?: Array<{
-        behavior?: 'whitelist' | 'blacklist'
-        codes?: Array<string>
-        action?: 'block' | 'check' | 'pass'
-    }>
+    geoipRule?: {
+        type: 'whitelist' | 'blacklist'
+        codes: Array<string>
+        action: geoipAction
+        otherwise: geoipAction
+    }
 }
+
+type geoipAction = 'block' | 'check' | 'pass'
 
 export interface AbuseIPDBResponse {
     data: {

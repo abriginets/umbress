@@ -16,19 +16,18 @@ import pug from 'pug'
 import path from 'path'
 import Redis from 'ioredis'
 import uuidv4 from 'uuid/v4'
-import { Request as Req, Response as Res, NextFunction as Next } from 'express'
-
 import { promises as dns } from 'dns'
+import { Request as Req, Response as Res, NextFunction as Next } from 'express'
 
 /**
  * Engine Modules
  */
 
 import { defaults } from './defaults'
+import { checkAddress } from './abuseipdb'
 import { isIpInSubnets, isIpInList } from './ip'
 import { getAddress, iterate, merge } from './helpers'
 import { sendInitial, Opts as AutomatedOpts } from './automated'
-import { checkAddress } from './abuseipdb'
 
 /**
  * Logic
@@ -77,8 +76,10 @@ fs.readdirSync(templatesPath).forEach((file: string): void => {
 
 const CLEARANCE_COOKIE_NAME = '__umb_clearance'
 const UMBRESS_COOKIE_NAME = '__umbuuid'
-const PROXY_HOSTNAME = 'X-Forwarded-Hostname'
-const PROXY_PROTO = 'X-Forwarded-Proto'
+
+const PROXY_HOSTNAME = 'x-forwarded-hostname'
+const PROXY_PROTO = 'x-forwarded-proto'
+const PROXY_GEOIP = 'x-umbress-country'
 
 const CACHE_PREFIX = 'umbress_'
 
@@ -191,21 +192,41 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
          * GeoIP blocking
          */
 
-        if ('X-Umbress-Country' in req.headers && options.geoipRules.length > 0) {
-            for (const rule of options.geoipRules) {
-                if (req.headers['X-Umbress-Country'] in rule.codes) {
-                    if (rule.behavior === 'whitelist') {
-                        if (options.advancedClientChallenging.enabled && rule.action === 'pass') {
-                            bypassChecking === true
-                        } else if (!options.advancedClientChallenging.enabled && rule.action === 'check') {
-                            return await sendInitial(initialOpts)
-                        }
-                    } else {
-                        if (!options.advancedClientChallenging.enabled && rule.action === 'check') {
-                            return await sendInitial(initialOpts)
-                        } else {
-                            return res.status(403).end()
-                        }
+        if (PROXY_GEOIP in req.headers) {
+            if (options.geoipRule.type === 'whitelist') {
+                if (options.geoipRule.codes.includes(req.headers[PROXY_GEOIP] as string)) {
+                    if (options.advancedClientChallenging.enabled && options.geoipRule.action === 'pass') {
+                        bypassChecking = true
+                    }
+
+                    if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
+                        return await sendInitial(initialOpts)
+                    }
+                } else {
+                    if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
+                        return await sendInitial(initialOpts)
+                    }
+
+                    if (options.geoipRule.otherwise === 'block') {
+                        return res.status(403).end()
+                    }
+                }
+            } else {
+                if (options.geoipRule.codes.includes(req.headers[PROXY_GEOIP] as string)) {
+                    if (options.geoipRule.action === 'block') {
+                        return res.status(403).end()
+                    }
+
+                    if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
+                        return await sendInitial(initialOpts)
+                    }
+                } else {
+                    if (options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'pass') {
+                        bypassChecking = true
+                    }
+
+                    if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
+                        return await sendInitial(initialOpts)
                     }
                 }
             }
