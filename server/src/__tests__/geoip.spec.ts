@@ -1,4 +1,3 @@
-import delay from 'delay'
 import express from 'express'
 import umbress from '../../dist/index'
 import request from 'supertest'

@@ -13,7 +13,7 @@
     "compile-server": "tsc --project ./server/tsconfig.json",
     "clean-server": "rimraf server/dist",
     "clean-client": "rimraf public/dist",
-    "build:skip-tests": "run-s clean-server clean-client build-server build-client",
+    "build:skip-tests": "run-s build-server build-client",
     "build-server:skip-tests": "run-s clean-server compile-server",
     "test": "jest --coverage --config config/jest.js --forceExit",
     "test:debug": "jest --detectOpenHandles --runInBand --config config/jest.js"
