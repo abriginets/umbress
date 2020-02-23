@@ -48,7 +48,7 @@ describe('block users trying to look like a crawler', function() {
         res.send('Request passed')
     })
 
-    it('should block access', async done => {
+    it('should block access for IP with googlebot`s useragent', async done => {
         await request(app)
             .get('/')
             .set({

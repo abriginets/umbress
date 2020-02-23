@@ -2,6 +2,9 @@ import request from 'supertest'
 import express, { Request, Response } from 'express'
 import umbress from '../../dist/index'
 
+const cookieRegex = /^__umbuuid=([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12});\sDomain=(.+?);\sPath=\/; Expires=(.+?);\sHttpOnly;\sSameSite=Lax$/
+const skRegex = /name="sk"\svalue="([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})"/
+
 describe('validate automated browser checking options', function() {
     const app = express()
 
@@ -33,6 +36,44 @@ describe('validate automated browser checking options', function() {
     })
 })
 
+describe('test automated throw 503 on missing body on POST', function() {
+    const app = express()
+
+    app.use(
+        umbress({
+            advancedClientChallenging: {
+                enabled: true
+            }
+        })
+    )
+
+    app.get('/', function(req, res) {
+        res.send('Passed!')
+    })
+
+    it('should throw 503 on body missing', async done => {
+        const resOne = await request(app)
+            .get('/')
+            .expect('Content-type', /html/)
+            .expect(503)
+            .expect('Set-Cookie', cookieRegex)
+            .expect(/Checking your browser before accessing the website/)
+
+        const [umbuuid] = resOne.header['set-cookie']
+        const action = resOne.text.match(/action="\?__umbuid=(.+?)"/)[1]
+
+        const uuid = resOne.text.match(skRegex)[1]
+
+        await request(app)
+            .post('/?__umbuid=' + action)
+            .send(`sk=${uuid}&jschallenge=123`)
+            .set('Cookie', umbuuid)
+            .expect(503)
+
+        done()
+    })
+})
+
 describe('test automated browser checking', function() {
     const app = express()
 
@@ -46,11 +87,9 @@ describe('test automated browser checking', function() {
         })
     )
 
-    app.get('/', function(req: Request, res: Response) {
+    app.get('/', function(req, res) {
         res.send('Challenge passed!')
     })
-
-    const cookieRegex = /^__umbuuid=([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12});\sDomain=(.+?);\sPath=\/; Expires=(.+?);\sHttpOnly;\sSameSite=Lax$/
 
     it('should resend 301 on wrong answer', async done => {
         const resOne = await request(app)
@@ -63,9 +102,7 @@ describe('test automated browser checking', function() {
         const [umbuuid] = resOne.header['set-cookie']
         const action = resOne.text.match(/action="\?__umbuid=(.+?)"/)[1]
 
-        const uuid = resOne.text.match(
-            /name="sk"\svalue="([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})"/
-        )[1]
+        const uuid = resOne.text.match(skRegex)[1]
 
         await request(app)
             .post('/?__umbuid=' + action)
@@ -87,9 +124,7 @@ describe('test automated browser checking', function() {
         const [umbuuid] = resOne.header['set-cookie']
         const action = resOne.text.match(/action="\?__umbuid=(.+?)"/)[1]
 
-        const uuid = resOne.text.match(
-            /name="sk"\svalue="([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})"/
-        )[1]
+        const uuid = resOne.text.match(skRegex)[1]
 
         /**
          * Test coverage for cached uuid value
@@ -102,9 +137,7 @@ describe('test automated browser checking', function() {
             .expect('Set-Cookie', cookieRegex)
             .expect(/Checking your browser before accessing the website/)
 
-        const uuidCached = resCached.text.match(
-            /name="sk"\svalue="([0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12})"/
-        )[1]
+        const uuidCached = resCached.text.match(skRegex)[1]
 
         expect(uuidCached).toEqual(uuid)
 
@@ -121,6 +154,13 @@ describe('test automated browser checking', function() {
         })
 
         const answer = nums.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) * symb.length
+
+        // send incomplete body
+        await request(app)
+            .post('/?__umbuid=' + action)
+            .send(`sk=${uuid}`)
+            .set('Cookie', umbuuid)
+            .expect(503)
 
         const resTwo = await request(app)
             .post('/?__umbuid=' + action)

@@ -11,29 +11,30 @@ import { UmbressOptions, PugTemplates } from './types'
  */
 
 import fs from 'fs'
+import net from 'net'
 import pug from 'pug'
 import path from 'path'
 import Redis from 'ioredis'
 import uuidv4 from 'uuid/v4'
-import { Request as Req, Response as Res, NextFunction as Next } from 'express'
-
 import { promises as dns } from 'dns'
+import { Request as Req, Response as Res, NextFunction as Next } from 'express'
 
 /**
  * Engine Modules
  */
 
 import { defaults } from './defaults'
+import { checkAddress } from './abuseipdb'
 import { isIpInSubnets, isIpInList } from './ip'
 import { getAddress, iterate, merge } from './helpers'
 import { sendInitial, Opts as AutomatedOpts } from './automated'
-import { checkAddress } from './abuseipdb'
 
 /**
  * Logic
  */
 
-const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/\d{1,3}$/
+const ipv4SubnetRegexp = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/\d{1,3}$/
+const ipv6SubnetRegexp = /^s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(%.+)?s*(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$/
 
 /**
  * Whitelisted crawlers:
@@ -45,7 +46,7 @@ const subnetRegex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0
  * Applebot
  */
 
-const BOTS_USERAGENT_REGEX = /(Googlebot|AdsBot-Google)|Yandex(Webmaster|Bot|Metrika)|bingbot|msnbot|Baiduspider|Mail\.RU_Bot|Applebot/
+const BOTS_USERAGENT_REGEX = /((AdsBot-)?Google(bot)?)|Yandex(Webmaster|Bot|Metrika)|(bing|msn)bot|Baiduspider|Mail\.RU_Bot|Applebot/
 const BOTS_HOSTNAME_REGEX = /(google(bot)?.com|yandex\.(com|net|ru)|search\.msn\.com|crawl\.baidu\.com|mail\.ru|applebot\.apple\.com)$/
 
 /**
@@ -75,8 +76,12 @@ fs.readdirSync(templatesPath).forEach((file: string): void => {
 
 const CLEARANCE_COOKIE_NAME = '__umb_clearance'
 const UMBRESS_COOKIE_NAME = '__umbuuid'
-const PROXY_HOSTNAME = 'X-Forwarded-Hostname'
-const PROXY_PROTO = 'X-Forwarded-Proto'
+
+const PROXY_HOSTNAME = 'x-forwarded-hostname'
+const PROXY_PROTO = 'x-forwarded-proto'
+const PROXY_GEOIP = 'x-umbress-country'
+
+const CACHE_PREFIX = 'umbress_'
 
 export default function umbress(instanceOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
     const defaultOptions = defaults(pugs.face())
@@ -87,47 +92,32 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
     const redis = new Redis({
         host: options.advancedClientChallenging.cacheHost,
         port: options.advancedClientChallenging.cachePort,
-        keyPrefix: 'umbress_'
+        keyPrefix: CACHE_PREFIX
     })
 
-    const subnets: Array<string> = []
+    const ipv4Subnets: Array<string> = []
+    const ipv6Subnets: Array<string> = []
 
     if (options.whitelist.length > 0 || options.blacklist.length > 0) {
         let key = ''
 
         if (options.whitelist.length > 0) key = 'whitelist'
-        if (key.length === 0) {
-            if (options.blacklist.length > 0) key = 'blacklist'
-        }
+        if (key.length === 0 && options.blacklist.length > 0) key = 'blacklist'
 
-        for (let i = 0; i < options[key].length; i++) {
-            if (subnetRegex.test(options[key][i])) {
-                subnets.push(options[key][i])
+        for (const entry of options[key]) {
+            if (ipv4SubnetRegexp.test(entry)) {
+                ipv4Subnets.push(entry)
+            } else if (ipv6SubnetRegexp.test(entry)) {
+                ipv6Subnets.push(entry)
             }
         }
-    }
-
-    /**
-     * Decrementing queue. The formula is time / requests * 1000
-     * The lower req/s ratio is - the less frequent queue is releasing ips from queue and jail
-     */
-
-    const queue = {}
-
-    if (options.rateLimiter.enabled) {
-        setInterval(() => {
-            for (const ip in queue) {
-                if (queue[ip] <= 0) {
-                    delete queue[ip]
-                } else queue[ip]--
-            }
-        }, (options.rateLimiter.per / options.rateLimiter.requests) * 1000)
     }
 
     return async function(req: Req, res: Res, next: Next): Promise<void | Next | Res> {
         const ip = getAddress(req, options.isProxyTrusted)
-        const ratelimiterJailKey = 'jail_' + ip
-        const suspiciousJailKey = 'abuseipdb_' + ip
+
+        const ratelimiterCachePrefix = 'ratelimiter_'
+        const suspiciousJailPrefix = 'abuseipdb_'
         const botsKey = 'bot_' + ip
         let bypassChecking = false
 
@@ -175,7 +165,12 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                         }
                     } else {
                         if (!options.blacklist.includes(ip)) {
-                            options.blacklist.push(ip)
+                            if (options.advancedClientChallenging.enabled) {
+                                return await sendInitial(initialOpts)
+                            } else {
+                                options.blacklist.push(ip)
+                                return res.status(403).end()
+                            }
                         }
                     }
                     break
@@ -193,7 +188,58 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
             }
         }
 
-        if (options.advancedClientChallenging.enabled === true) {
+        /**
+         * GeoIP blocking
+         */
+
+        if (PROXY_GEOIP in req.headers) {
+            if (options.geoipRule.type === 'whitelist') {
+                if (options.geoipRule.codes.includes(req.headers[PROXY_GEOIP] as string)) {
+                    if (options.advancedClientChallenging.enabled && options.geoipRule.action === 'pass') {
+                        bypassChecking = true
+                    }
+
+                    if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
+                        return await sendInitial(initialOpts)
+                    }
+                } else {
+                    if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
+                        return await sendInitial(initialOpts)
+                    }
+
+                    if (options.geoipRule.otherwise === 'block') {
+                        return res.status(403).end()
+                    }
+                }
+            } else {
+                if (options.geoipRule.codes.includes(req.headers[PROXY_GEOIP] as string)) {
+                    if (options.geoipRule.action === 'block') {
+                        return res.status(403).end()
+                    }
+
+                    if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
+                        return await sendInitial(initialOpts)
+                    }
+                } else {
+                    if (options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'pass') {
+                        bypassChecking = true
+                    }
+
+                    if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
+                        return await sendInitial(initialOpts)
+                    }
+                }
+            }
+        }
+
+        /**
+         * Advanced client challenging
+         */
+
+        const isFirstCookie = !!req.headers.cookie && req.headers.cookie.includes(UMBRESS_COOKIE_NAME)
+        const allCookies = isFirstCookie && req.headers.cookie.includes(CLEARANCE_COOKIE_NAME)
+
+        if (options.advancedClientChallenging.enabled === true || (isFirstCookie && !allCookies)) {
             if (req.method === 'POST' && '__umbuid' in req.query) {
                 if (!req.body) return await sendInitial(initialOpts)
                 if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendInitial(initialOpts)
@@ -232,79 +278,89 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                 }
                 return await sendInitial(initialOpts)
             } else {
-                if (
-                    (!!req.headers.cookie &&
-                        req.headers.cookie.includes(UMBRESS_COOKIE_NAME) &&
-                        req.headers.cookie.includes(CLEARANCE_COOKIE_NAME)) ||
-                    bypassChecking === true
-                ) {
-                    return next()
-                } else {
-                    return await sendInitial(initialOpts)
-                }
+                if (allCookies || bypassChecking === true) return next()
+                else return await sendInitial(initialOpts)
             }
         }
 
-        if (options.whitelist.length > 0) {
-            if (subnets.length > 0 && subnets.length === options.whitelist.length) {
-                if (isIpInSubnets(ip, subnets)) return next()
-            } else if (subnets.length > 0 && subnets.length !== options.whitelist.length) {
-                if (isIpInSubnets(ip, subnets) || isIpInList(ip, options.whitelist)) return next()
-            } else if (subnets.length === 0 && options.whitelist.length > 0) {
-                if (isIpInList(ip, options.whitelist)) return next()
-            }
+        /**
+         * White and blacklists
+         */
 
-            return res.status(403).end()
+        if (options.whitelist.length > 0) {
+            if (net.isIPv4(ip)) {
+                if (isIpInList(ip, options.whitelist) || (ipv4Subnets.length > 0 && isIpInSubnets(ip, ipv4Subnets))) {
+                    return next()
+                } else {
+                    return res.status(403).end()
+                }
+            }
         }
 
         if (options.blacklist.length > 0) {
-            let toBlock = false
-
-            if (subnets.length > 0 && subnets.length === options.blacklist.length) {
-                if (isIpInSubnets(ip, subnets)) toBlock = true
-            } else if (subnets.length > 0 && subnets.length !== options.blacklist.length) {
-                if (isIpInSubnets(ip, subnets) || isIpInList(ip, options.blacklist)) toBlock = true
-            } else if (subnets.length === 0 && options.blacklist.length > 0) {
-                if (isIpInList(ip, options.blacklist)) toBlock = true
-            }
-
-            if (toBlock) {
-                return res.status(403).end()
+            if (net.isIPv4(ip)) {
+                if (isIpInList(ip, options.blacklist) || (ipv4Subnets.length > 0 && isIpInSubnets(ip, ipv4Subnets))) {
+                    return res.status(403).end()
+                }
             }
         }
 
+        /**
+         * Ratelimiter
+         */
+
         if (options.rateLimiter.enabled) {
-            const cachedIpData = await redis.get(ratelimiterJailKey)
+            const ratelimiterCacheKey = ratelimiterCachePrefix + ip
+            const ipKeys = await redis.keys(CACHE_PREFIX + ratelimiterCacheKey + '_*')
+            const nowRaw = new Date().valueOf()
+            const now = Math.round(nowRaw / 1000)
+            const isBannedAlready = ipKeys.length === 1 && ipKeys[0].endsWith('banned')
 
-            if (cachedIpData !== null) {
-                const ttl = new Date(Math.round(new Date().valueOf() / 1000) + (await redis.ttl(ratelimiterJailKey)))
+            if (ipKeys.length >= options.rateLimiter.requests || isBannedAlready) {
+                if (isBannedAlready) {
+                    const bannedKey = await redis.get(ipKeys[0])
+                    // if IP address marked as banned
+                    const bannedUntil = parseInt(await redis.get(bannedKey))
 
-                return res
-                    .status(429)
-                    .set({
-                        'Retry-After': ttl.toUTCString()
-                    })
-                    .end()
-            } else {
-                if (ip in queue) {
-                    if (queue[ip] > options.rateLimiter.requests) {
-                        await redis.set(ratelimiterJailKey, 'banned', 'EX', options.rateLimiter.banFor)
-
-                        if (options.clearQueueAfterBan) {
-                            delete queue[ip]
-                        }
-
-                        if (options.logs === true) {
-                            console.log(`[umbress] Banned ${ip} for ${options.rateLimiter.banFor} seconds`)
-                        }
-
-                        return res.status(429).end()
-                    } else {
-                        queue[ip]++
-                    }
+                    // if IP still banned
+                    return res
+                        .status(429)
+                        .set({
+                            'Retry-After': new Date((now - bannedUntil) * 1000).toUTCString()
+                        })
+                        .end()
                 } else {
-                    queue[ip] = 1
+                    // if IP reached threshold
+                    const bannedUntil = now + options.rateLimiter.banFor
+
+                    await redis.set(
+                        `${ratelimiterCacheKey}_${nowRaw}_banned`,
+                        bannedUntil,
+                        'EX',
+                        options.rateLimiter.banFor
+                    )
+
+                    if (options.rateLimiter.clearQueueAfterBan) {
+                        const pipeline = ['del']
+
+                        for (const ipKey of ipKeys) {
+                            if (!ipKey.endsWith('banned')) {
+                                pipeline.push(ipKey.replace(CACHE_PREFIX, ''))
+                            }
+                        }
+
+                        await redis.pipeline([pipeline]).exec()
+                    }
+
+                    return res
+                        .status(429)
+                        .set({
+                            'Retry-After': new Date(bannedUntil * 1000).toUTCString()
+                        })
+                        .end()
                 }
+            } else {
+                await redis.set(`${ratelimiterCacheKey}_${nowRaw}`, '', 'EX', options.rateLimiter.per)
             }
         }
 
@@ -313,6 +369,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
          */
 
         if (options.checkSuspiciousAddresses.enabled) {
+            const suspiciousJailKey = suspiciousJailPrefix + '_' + ip
             const ipData = await redis.get(suspiciousJailKey)
 
             if (ipData === null) {

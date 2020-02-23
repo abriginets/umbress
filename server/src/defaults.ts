@@ -24,12 +24,12 @@ export function defaults(contentForAutomated: string): UmbressOptions {
 
             /* Time of ban in seconds */
 
-            banFor: 30
+            banFor: 30,
+
+            /* Clear history of requests after ban */
+
+            clearQueueAfterBan: false
         },
-
-        /**  */
-
-        clearQueueAfterBan: false,
 
         /** This option enables notification about bans and unbans */
 
@@ -94,6 +94,12 @@ export function defaults(contentForAutomated: string): UmbressOptions {
             /** Redis server port */
 
             cachePort: 6379
+        },
+        geoipRule: {
+            type: 'whitelist',
+            codes: [],
+            action: 'pass',
+            otherwise: 'pass'
         }
     }
 
