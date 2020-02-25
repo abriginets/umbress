@@ -24,7 +24,7 @@ of detection and mitigation like crawlers authenticity checks, malicious IP addr
 ## Features
 - Rate-limiter
 - Malicious IP checker
-- Whitelists and blacklists for single IPs or subnets (currently IPv4 only)
+- Whitelists and blacklists for single IPs or subnets
 - Client-side JavaScript-challenging (like CloudFlare's UAM)
 - Crawlers authenticity checker
 - GeoIP manager
@@ -87,7 +87,7 @@ const app = express()
 
 app.use(
   umbress({
-    whitelist: ['12.34.65.0/24', '8.8.8.8']
+    whitelist: ['2a03:2880::/32', '12.34.65.0/24', '8.8.8.8']
   })
 )
 ```
