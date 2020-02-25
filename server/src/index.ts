@@ -11,7 +11,7 @@ import { UmbressOptions, PugTemplates } from './types'
  */
 
 import fs from 'fs'
-import net from 'net'
+import net, { isIPv4, isIPv6 } from 'net'
 import pug from 'pug'
 import path from 'path'
 import Redis from 'ioredis'
@@ -32,9 +32,6 @@ import { sendInitial, Opts as AutomatedOpts } from './automated'
 /**
  * Logic
  */
-
-const ipv4SubnetRegexp = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\/\d{1,3}$/
-const ipv6SubnetRegexp = /^s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]d|1dd|[1-9]?d)(.(25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(%.+)?s*(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$/
 
 /**
  * Whitelisted crawlers:
@@ -97,6 +94,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
 
     const ipv4Subnets: Array<string> = []
     const ipv6Subnets: Array<string> = []
+    const subnetsTail = new RegExp(/\/\d{1,3}/)
 
     if (options.whitelist.length > 0 || options.blacklist.length > 0) {
         let key = ''
@@ -105,10 +103,11 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
         if (key.length === 0 && options.blacklist.length > 0) key = 'blacklist'
 
         for (const entry of options[key]) {
-            if (ipv4SubnetRegexp.test(entry)) {
-                ipv4Subnets.push(entry)
-            } else if (ipv6SubnetRegexp.test(entry)) {
-                ipv6Subnets.push(entry)
+            if (subnetsTail.test(entry)) {
+                const bareAddr = entry.split('/')[0]
+
+                if (isIPv4(bareAddr)) ipv4Subnets.push(entry)
+                if (isIPv6(bareAddr)) ipv6Subnets.push(entry)
             }
         }
     }
@@ -288,20 +287,20 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
          */
 
         if (options.whitelist.length > 0) {
-            if (net.isIPv4(ip)) {
-                if (isIpInList(ip, options.whitelist) || (ipv4Subnets.length > 0 && isIpInSubnets(ip, ipv4Subnets))) {
-                    return next()
-                } else {
-                    return res.status(403).end()
-                }
+            const CIDRsToCheck = net.isIPv4(ip) ? ipv4Subnets : ipv6Subnets
+
+            if (isIpInList(ip, options.whitelist) || (CIDRsToCheck.length > 0 && isIpInSubnets(ip, CIDRsToCheck))) {
+                return next()
+            } else {
+                return res.status(403).end()
             }
         }
 
         if (options.blacklist.length > 0) {
-            if (net.isIPv4(ip)) {
-                if (isIpInList(ip, options.blacklist) || (ipv4Subnets.length > 0 && isIpInSubnets(ip, ipv4Subnets))) {
-                    return res.status(403).end()
-                }
+            const CIDRsToCheck = net.isIPv4(ip) ? ipv4Subnets : ipv6Subnets
+
+            if (isIpInList(ip, options.blacklist) || (CIDRsToCheck.length > 0 && isIpInSubnets(ip, CIDRsToCheck))) {
+                return res.status(403).end()
             }
         }
 

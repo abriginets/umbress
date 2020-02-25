@@ -1,7 +1,7 @@
 {
   "name": "umbress",
-  "version": "1.1.10",
-  "description": "Dynamic and flexible Express anti-DDoS middleware",
+  "version": "1.1.11",
+  "description": "Blazing fast ExpressJS anti-DDoS middleware ⚡",
   "main": "server/dist/index.js",
   "scripts": {
     "build": "run-s build-server build-client test",
@@ -21,7 +21,11 @@
   "keywords": [
     "ddos",
     "mitigation",
-    "express"
+    "express",
+    "ratelimiter",
+    "blacklist",
+    "whitelist",
+    "ddos-protection"
   ],
   "files": [
     "server/dist",
@@ -39,6 +43,7 @@
   "license": "MIT",
   "dependencies": {
     "ioredis": "^4.14.1",
+    "ipaddr.js": "^1.9.1",
     "node-fetch": "^2.6.0",
     "pug": "^2.0.4",
     "uuid": "^3.4.0"
