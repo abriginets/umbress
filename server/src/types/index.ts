@@ -1,5 +1,3 @@
-import { compileTemplate } from 'pug'
-
 export interface UmbressOptions {
     isProxyTrusted?: boolean
     rateLimiter?: {
@@ -62,8 +60,4 @@ export interface AbuseIPDBResponse {
             reporterCountryName: string
         }>
     }
-}
-
-export interface PugTemplates {
-    [key: string]: compileTemplate
 }

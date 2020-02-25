@@ -4,7 +4,6 @@
 
 import uuidv4 from 'uuid/v4'
 import { Redis } from 'ioredis'
-import { compileTemplate } from 'pug'
 import { Request, Response } from 'express'
 
 /**
@@ -25,8 +24,7 @@ export interface Opts {
     umbressCookieName: string
     proxyHostname: string
     proxyProto: string
-    template: compileTemplate
-    content: string
+    template: string
     cache: Redis
     cookieTtl: number
 }
@@ -65,13 +63,22 @@ export async function sendInitial(options: Opts): Promise<Response> {
                 : options.req.protocol === 'https'
         })
         .send(
-            options.template({
-                content: options.content,
-                styleContent: getAdvancedAssets('automated', 'css'),
-                scriptContent: getAdvancedAssets('automated', 'js'),
-                uuid: uuid,
-                randCacheBypass: hash.join(''),
-                cookieTimestamp: Math.round(expires.valueOf() / 1000)
-            })
+            options.template
+                .replace('%randCacheBypass%', hash.join(''))
+                .replace('%cookieTimestamp%', Math.round(expires.valueOf() / 1000).toString())
+                .replace('%uuid%', uuid)
         )
+}
+
+export function precompile(userContent: string, frame: string): string {
+    const styleContent = getAdvancedAssets('automated', 'css')
+    const scriptContent = getAdvancedAssets('automated', 'js')
+
+    const styleRegexp = new RegExp('<style\\stype="text\\/css"><\\/style>')
+    const scriptRegexp = new RegExp('<script\\stype="text\\/javascript"><\\/script>')
+
+    return frame
+        .replace('%user_content%', userContent)
+        .replace(styleRegexp, `<style type="text/css">${styleContent}</style>`)
+        .replace(scriptRegexp, `<script type="text/javascript">${scriptContent}</script>`)
 }
