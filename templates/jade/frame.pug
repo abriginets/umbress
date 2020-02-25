@@ -6,13 +6,13 @@ html
         meta(name='robots' content='noindex, nofollow')
         meta(name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1')
         title Just a moment...
-        style(type='text/css') !{styleContent}
+        style(type='text/css')
     body
         .center-aligned-content
             noscript
                 h1 You need to have JavaScript enabled to see the requested content
-            .usercontent(style='display: none') !{content}
-            form(id='challenge-form' method='POST' action='?__umbuid='+randCacheBypass+'_'+cookieTimestamp enctype='application/x-www-form-urlencoded')
-                input(type='hidden' id='skuid' name='sk' value=uuid)
+            .usercontent(style='display: none') %user_content%
+            form(id='challenge-form' method='POST' action='?__umbuid=%randCacheBypass%_%cookieTimestamp%' enctype='application/x-www-form-urlencoded')
+                input(type='hidden' id='skuid' name='sk' value='%uuid%')
                 input(type='hidden' id='jschallenge_answer' name='jschallenge')
-        script(type='text/javascript') !{scriptContent}
+        script(type='text/javascript')

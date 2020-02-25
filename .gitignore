@@ -53,3 +53,6 @@ node_modules/
 # Build directories
 server/dist
 public/dist
+
+# Compiled templates
+templates/compiled

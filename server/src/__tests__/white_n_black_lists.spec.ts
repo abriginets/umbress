@@ -1,6 +1,6 @@
 import request from 'supertest'
 import express from 'express'
-import umbress from '../../dist/index'
+import umbress from '../index'
 
 describe('whitelist subnet testing', function() {
     const app = express()
@@ -8,7 +8,7 @@ describe('whitelist subnet testing', function() {
     app.use(
         umbress({
             isProxyTrusted: true,
-            whitelist: ['12.34.65.0/24']
+            whitelist: ['12.34.65.0/24', '2a03:2880::/32']
         })
     )
 
@@ -32,6 +32,16 @@ describe('whitelist subnet testing', function() {
             .set('Accept', 'application/json')
             .set('X-Forwarded-For', '12.34.66.58')
             .expect(403)
+
+        done()
+    })
+
+    it('should pass IPv6 that is in range of subnet', async done => {
+        await request(app)
+            .get('/')
+            .set('Accept', 'application/json')
+            .set('X-Forwarded-For', '2a03:2880:31ff:10::face:b00c')
+            .expect(200)
 
         done()
     })
@@ -78,7 +88,7 @@ describe('blacklist subnet testing', function() {
     app.use(
         umbress({
             isProxyTrusted: true,
-            blacklist: ['12.34.56.0/24']
+            blacklist: ['12.34.56.0/24', '2a03:2880:2130:cf05::/64']
         })
     )
 
@@ -91,6 +101,16 @@ describe('blacklist subnet testing', function() {
             .get('/')
             .set('Accept', 'application/json')
             .set('X-Forwarded-For', '12.34.56.67')
+            .expect(403)
+
+        done()
+    })
+
+    it('should block IPv6 that is in subnet', async done => {
+        await request(app)
+            .get('/')
+            .set('Accept', 'application/json')
+            .set('X-Forwarded-For', '2a03:2880:2130:cf05::face:b00c')
             .expect(403)
 
         done()

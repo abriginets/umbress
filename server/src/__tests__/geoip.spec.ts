@@ -1,6 +1,5 @@
-import delay from 'delay'
 import express from 'express'
-import umbress from '../../dist/index'
+import umbress from '../index'
 import request from 'supertest'
 
 describe('test geoip whitelist', function() {
