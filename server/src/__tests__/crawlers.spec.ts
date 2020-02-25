@@ -1,6 +1,6 @@
 import express from 'express'
 import request from 'supertest'
-import umbress from '../../dist/index'
+import umbress from '../index'
 import Redis from 'ioredis'
 
 const redis = new Redis({

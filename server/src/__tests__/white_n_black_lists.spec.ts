@@ -1,6 +1,6 @@
 import request from 'supertest'
 import express from 'express'
-import umbress from '../../dist/index'
+import umbress from '../index'
 
 describe('whitelist subnet testing', function() {
     const app = express()

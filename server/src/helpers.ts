@@ -58,7 +58,7 @@ export const getAddress = (req: Request, isProxyTrusted: boolean): string => {
     }
 }
 
-export function getAdvancedAssets(name: 'automated', ext: 'css' | 'js'): string {
+export const getAdvancedAssets = (name: 'automated', ext: 'css' | 'js'): string => {
     const dirname = path.resolve(__dirname, '../../public/dist')
     let fileContent = null
 

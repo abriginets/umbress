@@ -4,7 +4,7 @@
  * MIT Licensed
  */
 
-import { UmbressOptions, PugTemplates } from './types'
+import { UmbressOptions } from './types'
 
 /**
  * Core Modules
@@ -12,7 +12,6 @@ import { UmbressOptions, PugTemplates } from './types'
 
 import fs from 'fs'
 import net, { isIPv4, isIPv6 } from 'net'
-import pug from 'pug'
 import path from 'path'
 import Redis from 'ioredis'
 import uuidv4 from 'uuid/v4'
@@ -27,7 +26,7 @@ import { defaults } from './defaults'
 import { checkAddress } from './abuseipdb'
 import { isIpInSubnets, isIpInList } from './ip'
 import { getAddress, iterate, merge } from './helpers'
-import { sendInitial, Opts as AutomatedOpts } from './automated'
+import { sendInitial, precompile, Opts as AutomatedOpts } from './automated'
 
 /**
  * Logic
@@ -55,22 +54,6 @@ const BOTS_HOSTNAME_REGEX = /(google(bot)?.com|yandex\.(com|net|ru)|search\.msn\
 
 const NON_HOSTNAMEABLE_BOTS = /Twitterbot|facebookexternalhit|vkShare/
 
-const pugs: PugTemplates = {}
-const templatesPath = path.join(__dirname + '/../../templates/')
-
-fs.readdirSync(templatesPath).forEach((file: string): void => {
-    if (file.endsWith('.pug')) {
-        try {
-            const filepath = templatesPath + file
-            pugs[file.split('.pug')[0]] = pug.compile(fs.readFileSync(filepath, { encoding: 'utf-8' }), {
-                filename: filepath
-            })
-        } catch (e) {
-            console.error(e)
-        }
-    }
-})
-
 const CLEARANCE_COOKIE_NAME = '__umb_clearance'
 const UMBRESS_COOKIE_NAME = '__umbuuid'
 
@@ -80,11 +63,24 @@ const PROXY_GEOIP = 'x-umbress-country'
 
 const CACHE_PREFIX = 'umbress_'
 
+const templatesPath = '../../templates/compiled'
+
 export default function umbress(instanceOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
-    const defaultOptions = defaults(pugs.face())
+    const templates: { [key: string]: string } = {}
+
+    fs.readdirSync(path.join(__dirname, templatesPath)).forEach(filename => {
+        templates[filename.replace('.html', '')] = fs.readFileSync(
+            path.join(__dirname, templatesPath + '/' + filename),
+            { encoding: 'utf-8' }
+        )
+    })
+
+    const defaultOptions = defaults(templates.face)
     const options = merge(defaultOptions, instanceOptions)
 
     iterate(options, defaultOptions)
+
+    const precompiledFrame = precompile(options.advancedClientChallenging.content, templates.frame)
 
     const redis = new Redis({
         host: options.advancedClientChallenging.cacheHost,
@@ -128,8 +124,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
             umbressCookieName: UMBRESS_COOKIE_NAME,
             proxyHostname: PROXY_HOSTNAME.replace('www.', ''),
             proxyProto: PROXY_PROTO,
-            template: pugs.frame,
-            content: options.advancedClientChallenging.content,
+            template: precompiledFrame,
             cache: redis,
             cookieTtl: options.advancedClientChallenging.cookieTtl
         }
