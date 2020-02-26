@@ -14,7 +14,7 @@ import fs from 'fs'
 import net, { isIPv4, isIPv6 } from 'net'
 import path from 'path'
 import Redis from 'ioredis'
-import uuidv4 from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 import { promises as dns } from 'dns'
 import { Request as Req, Response as Res, NextFunction as Next } from 'express'
 

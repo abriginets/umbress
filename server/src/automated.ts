@@ -2,8 +2,8 @@
  * Core Modules
  */
 
-import uuidv4 from 'uuid/v4'
 import { Redis } from 'ioredis'
+import { v4 as uuidv4 } from 'uuid'
 import { Request, Response } from 'express'
 
 /**
