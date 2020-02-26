@@ -58,7 +58,7 @@
     "@types/node": "^13.5.3",
     "@types/node-fetch": "^2.5.5",
     "@types/supertest": "^2.0.8",
-    "@types/uuid": "^3.4.7",
+    "@types/uuid": "^7.0.0",
     "@typescript-eslint/eslint-plugin": "^2.8.0",
     "@typescript-eslint/parser": "^2.21.0",
     "autoprefixer": "^9.7.4",
