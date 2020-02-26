@@ -100,6 +100,11 @@ export function defaults(contentForAutomated: string): UmbressOptions {
             codes: [],
             action: 'pass',
             otherwise: 'pass'
+        },
+        recaptcha: {
+            enabled: false,
+            siteKey: '',
+            secretKey: ''
         }
     }
 

@@ -4,9 +4,9 @@
 
 import { UmbressOptions } from './types'
 
-import fs from 'fs'
 import path from 'path'
 import { Request } from 'express'
+import { readdirSync, readFileSync } from 'fs'
 
 /**
  * Engine Modules
@@ -58,13 +58,13 @@ export const getAddress = (req: Request, isProxyTrusted: boolean): string => {
     }
 }
 
-export const getAdvancedAssets = (name: 'automated', ext: 'css' | 'js'): string => {
+export const getPublicAsset = (name: 'automated', ext: 'css' | 'js'): string => {
     const dirname = path.resolve(__dirname, '../../public/dist')
-    let fileContent = null
+    let fileContent: null | string = null
 
-    fs.readdirSync(dirname).forEach((file: string) => {
+    readdirSync(dirname).forEach((file: string) => {
         if (file.startsWith(name) && file.endsWith(ext)) {
-            fileContent = fs.readFileSync(path.resolve(dirname, file), { encoding: 'utf-8' })
+            fileContent = readFileSync(path.resolve(dirname, file), { encoding: 'utf-8' })
         }
     })
 

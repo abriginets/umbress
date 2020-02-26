@@ -10,7 +10,7 @@ import { Request, Response } from 'express'
  * Engine Modules
  */
 
-import { getAdvancedAssets } from './helpers'
+import { getPublicAsset } from './helpers'
 
 /**
  * Logic
@@ -29,7 +29,7 @@ export interface Opts {
     cookieTtl: number
 }
 
-export async function sendInitial(options: Opts): Promise<Response> {
+export async function sendAutomated(options: Opts): Promise<Response> {
     const hash = []
     const dict = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 
@@ -71,8 +71,8 @@ export async function sendInitial(options: Opts): Promise<Response> {
 }
 
 export function precompile(userContent: string, frame: string): string {
-    const styleContent = getAdvancedAssets('automated', 'css')
-    const scriptContent = getAdvancedAssets('automated', 'js')
+    const styleContent = getPublicAsset('automated', 'css')
+    const scriptContent = getPublicAsset('automated', 'js')
 
     const styleRegexp = new RegExp('<style\\stype="text\\/css"><\\/style>')
     const scriptRegexp = new RegExp('<script\\stype="text\\/javascript"><\\/script>')

@@ -4,7 +4,7 @@
  * MIT Licensed
  */
 
-import { UmbressOptions } from './types'
+import { UmbressOptions, HtmlTemplates } from './types'
 
 /**
  * Core Modules
@@ -26,7 +26,7 @@ import { defaults } from './defaults'
 import { checkAddress } from './abuseipdb'
 import { isIpInSubnets, isIpInList } from './ip'
 import { getAddress, iterate, merge } from './helpers'
-import { sendInitial, precompile, Opts as AutomatedOpts } from './automated'
+import { sendAutomated, precompile, Opts as AutomatedOpts } from './automated'
 
 /**
  * Logic
@@ -65,22 +65,30 @@ const CACHE_PREFIX = 'umbress_'
 
 const templatesPath = '../../templates/compiled'
 
-export default function umbress(instanceOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
-    const templates: { [key: string]: string } = {}
+export default function umbress(userOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
+    const templates: HtmlTemplates = {}
+    const compiledPath = path.join(__dirname, templatesPath)
 
-    fs.readdirSync(path.join(__dirname, templatesPath)).forEach(filename => {
-        templates[filename.replace('.html', '')] = fs.readFileSync(
-            path.join(__dirname, templatesPath + '/' + filename),
-            { encoding: 'utf-8' }
-        )
+    fs.readdirSync(compiledPath).forEach(f => {
+        if (f in templates === false) {
+            templates[f] = {}
+        }
+
+        const filesPath = path.resolve(compiledPath, f)
+
+        fs.readdirSync(filesPath).forEach(h => {
+            const filePath = path.resolve(filesPath, h)
+
+            templates[f][h.split('.html')[0]] = fs.readFileSync(filePath, { encoding: 'utf-8' })
+        })
     })
 
-    const defaultOptions = defaults(templates.face)
-    const options = merge(defaultOptions, instanceOptions)
+    const defaultOptions = defaults(templates.automated.face)
+    const options = merge(defaultOptions, userOptions)
 
     iterate(options, defaultOptions)
 
-    const precompiledFrame = precompile(options.advancedClientChallenging.content, templates.frame)
+    const automatedFrame = precompile(options.advancedClientChallenging.content, templates.automated.frame)
 
     const redis = new Redis({
         host: options.advancedClientChallenging.cacheHost,
@@ -114,6 +122,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
         const ratelimiterCachePrefix = 'ratelimiter_'
         const suspiciousJailPrefix = 'abuseipdb_'
         const botsKey = 'bot_' + ip
+
         let bypassChecking = false
 
         const initialOpts: AutomatedOpts = {
@@ -124,7 +133,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
             umbressCookieName: UMBRESS_COOKIE_NAME,
             proxyHostname: PROXY_HOSTNAME.replace('www.', ''),
             proxyProto: PROXY_PROTO,
-            template: precompiledFrame,
+            template: automatedFrame,
             cache: redis,
             cookieTtl: options.advancedClientChallenging.cookieTtl
         }
@@ -160,7 +169,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     } else {
                         if (!options.blacklist.includes(ip)) {
                             if (options.advancedClientChallenging.enabled) {
-                                return await sendInitial(initialOpts)
+                                return await sendAutomated(initialOpts)
                             } else {
                                 options.blacklist.push(ip)
                                 return res.status(403).end()
@@ -194,11 +203,11 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendAutomated(initialOpts)
                     }
                 } else {
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendAutomated(initialOpts)
                     }
 
                     if (options.geoipRule.otherwise === 'block') {
@@ -212,7 +221,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendAutomated(initialOpts)
                     }
                 } else {
                     if (options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'pass') {
@@ -220,7 +229,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendAutomated(initialOpts)
                     }
                 }
             }
@@ -235,8 +244,8 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
 
         if (options.advancedClientChallenging.enabled === true || (isFirstCookie && !allCookies)) {
             if (req.method === 'POST' && '__umbuid' in req.query) {
-                if (!req.body) return await sendInitial(initialOpts)
-                if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendInitial(initialOpts)
+                if (!req.body) return await sendAutomated(initialOpts)
+                if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendAutomated(initialOpts)
 
                 const bd: { sk: string; jschallenge: string } = req.body
 
@@ -270,10 +279,10 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                             }${req.path}`
                         )
                 }
-                return await sendInitial(initialOpts)
+                return await sendAutomated(initialOpts)
             } else {
                 if (allCookies || bypassChecking === true) return next()
-                else return await sendInitial(initialOpts)
+                else return await sendAutomated(initialOpts)
             }
         }
 
@@ -374,7 +383,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     if (options.checkSuspiciousAddresses.action === 'block') {
                         return res.status(403).end()
                     } else if (options.checkSuspiciousAddresses.action === 'check') {
-                        return await sendInitial({
+                        return await sendAutomated({
                             ...initialOpts,
                             ...{ cookieTtl: options.checkSuspiciousAddresses.cookieTtl }
                         })

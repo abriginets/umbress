@@ -1,7 +1,7 @@
 export interface UmbressOptions {
     isProxyTrusted?: boolean
     rateLimiter?: {
-        enabled?: boolean
+        enabled: boolean
         requests?: number
         per?: number
         banFor?: number
@@ -11,8 +11,8 @@ export interface UmbressOptions {
     whitelist?: Array<string>
     blacklist?: Array<string>
     checkSuspiciousAddresses?: {
-        enabled?: boolean
-        token?: string
+        enabled: boolean
+        token: string
         action?: 'block' | 'check'
         banFor?: number
         cookieTtl?: 1
@@ -31,6 +31,12 @@ export interface UmbressOptions {
         codes: Array<string>
         action: geoipAction
         otherwise: geoipAction
+    }
+    recaptcha?: {
+        enabled: boolean
+        siteKey: string
+        secretKey: string
+        cookieTtl?: number
     }
 }
 
@@ -59,5 +65,14 @@ export interface AbuseIPDBResponse {
             reporterCountryCode: string
             reporterCountryName: string
         }>
+    }
+}
+
+type TemplateDirs = 'automated' | 'recaptcha'
+type TemplateFiles = 'frame' | 'face' | 'image'
+
+export type HtmlTemplates = {
+    [key in TemplateDirs]?: {
+        [key in TemplateFiles]?: string
     }
 }
