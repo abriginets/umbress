@@ -1,3 +1,6 @@
+import { Redis } from 'ioredis'
+import express from 'express'
+
 export interface UmbressOptions {
     isProxyTrusted?: boolean
     rateLimiter?: {
@@ -37,6 +40,8 @@ export interface UmbressOptions {
         siteKey: string
         secretKey: string
         cookieTtl?: number
+        header?: string
+        description?: string
     }
 }
 
@@ -68,11 +73,29 @@ export interface AbuseIPDBResponse {
     }
 }
 
-type TemplateDirs = 'automated' | 'recaptcha'
-type TemplateFiles = 'frame' | 'face' | 'image'
+export interface AutomatedNCaptchaOpts {
+    ip: string
+    req: express.Request
+    res: express.Response
+    proxyTrusted: boolean
+    automatedCookieName: string
+    recaptchaCookieName: string
+    proxyHostname: string
+    proxyProto: string
+    automatedTemplate: string
+    recaptchaTemplate: string
+    cache: Redis
+    automatedCookieTtl: number
+    recaptchaCookieTtl: number
+}
 
-export type HtmlTemplates = {
-    [key in TemplateDirs]?: {
-        [key in TemplateFiles]?: string
+type AutomatedFiles = 'frame' | 'face' | 'image'
+
+export interface HtmlTemplates {
+    automated?: {
+        [key in AutomatedFiles]: string
+    }
+    recaptcha?: {
+        index: string
     }
 }

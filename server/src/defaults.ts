@@ -104,7 +104,11 @@ export function defaults(contentForAutomated: string): UmbressOptions {
         recaptcha: {
             enabled: false,
             siteKey: '',
-            secretKey: ''
+            secretKey: '',
+            cookieTtl: 30,
+            header: 'Prove you are not a robot',
+            description:
+                'This website is currently experiencing heavy malicious traffic and spam attacks so we had no choice but to enable captcha for everyone'
         }
     }
 

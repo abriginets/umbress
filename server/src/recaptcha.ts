@@ -17,8 +17,8 @@ import { getPublicAsset, getRandomQuery } from './helpers'
  * Logic
  */
 
-export async function sendInitialAutomated(options: AutomatedNCaptchaOpts): Promise<express.Response> {
-    const uuidCacheKey = 'uuidCache_' + options.ip + '_' + options.req.headers['user-agent']
+export const sendCaptcha = async (options: AutomatedNCaptchaOpts): Promise<express.Response> => {
+    const uuidCacheKey = 'recaptchaUuidCache_' + options.ip + '_' + options.req.headers['user-agent']
     let uuid = ''
 
     const cachedUuid = await options.cache.get(uuidCacheKey)
@@ -30,12 +30,12 @@ export async function sendInitialAutomated(options: AutomatedNCaptchaOpts): Prom
         await options.cache.set(uuidCacheKey, uuid, 'EX', 4)
     }
 
-    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * options.automatedCookieTtl)
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * options.recaptchaCookieTtl)
     const randomQuery = getRandomQuery(128)
 
     return options.res
-        .status(503)
-        .cookie(options.automatedCookieName, uuid, {
+        .status(403)
+        .cookie(options.recaptchaCookieName, uuid, {
             expires: expires,
             domain: '.' + (options.proxyTrusted ? options.req.headers[options.proxyHostname] : options.req.hostname),
             httpOnly: true,
@@ -45,22 +45,25 @@ export async function sendInitialAutomated(options: AutomatedNCaptchaOpts): Prom
                 : options.req.protocol === 'https'
         })
         .send(
-            options.automatedTemplate
+            options.recaptchaTemplate
                 .replace('%randCacheBypass%', randomQuery)
                 .replace('%cookieTimestamp%', Math.round(expires.valueOf() / 1000).toString())
                 .replace('%uuid%', uuid)
         )
 }
 
-export function precompileAutomated(userContent: string, frame: string): string {
-    const styleContent = getPublicAsset('automated', 'css')
-    const scriptContent = getPublicAsset('automated', 'js')
+export const precompileRecaptcha = (siteKey: string, header: string, text: string, frame: string): string => {
+    const styleContent = getPublicAsset('recaptcha', 'css')
+    const scriptContent = getPublicAsset('recaptcha', 'js')
 
     const styleRegexp = new RegExp('<style\\stype="text\\/css"><\\/style>')
     const scriptRegexp = new RegExp('<script\\stype="text\\/javascript"><\\/script>')
 
-    return frame
-        .replace('%user_content%', userContent)
+    const stageOneFrame = frame
+        .replace('%captcha_header%', header)
+        .replace('%captcha_text%', text)
         .replace(styleRegexp, `<style type="text/css">${styleContent}</style>`)
         .replace(scriptRegexp, `<script type="text/javascript">${scriptContent}</script>`)
+
+    return stageOneFrame.replace('%recaptchaSiteKey%', siteKey)
 }

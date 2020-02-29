@@ -4,18 +4,19 @@
  * MIT Licensed
  */
 
-import { UmbressOptions, HtmlTemplates } from './types'
+import { UmbressOptions, HtmlTemplates, AutomatedNCaptchaOpts } from './types'
 
 /**
  * Core Modules
  */
 
 import fs from 'fs'
-import net, { isIPv4, isIPv6 } from 'net'
 import path from 'path'
 import Redis from 'ioredis'
+import fetch from 'node-fetch'
 import { v4 as uuidv4 } from 'uuid'
 import { promises as dns } from 'dns'
+import net, { isIPv4, isIPv6 } from 'net'
 import { Request as Req, Response as Res, NextFunction as Next } from 'express'
 
 /**
@@ -26,7 +27,8 @@ import { defaults } from './defaults'
 import { checkAddress } from './abuseipdb'
 import { isIpInSubnets, isIpInList } from './ip'
 import { getAddress, iterate, merge } from './helpers'
-import { sendAutomated, precompile, Opts as AutomatedOpts } from './automated'
+import { precompileRecaptcha, sendCaptcha } from './recaptcha'
+import { sendInitialAutomated, precompileAutomated } from './automated'
 
 /**
  * Logic
@@ -54,8 +56,11 @@ const BOTS_HOSTNAME_REGEX = /(google(bot)?.com|yandex\.(com|net|ru)|search\.msn\
 
 const NON_HOSTNAMEABLE_BOTS = /Twitterbot|facebookexternalhit|vkShare/
 
-const CLEARANCE_COOKIE_NAME = '__umb_clearance'
-const UMBRESS_COOKIE_NAME = '__umbuuid'
+const AUTOMATED_INITIAL_COOKIE = '__umbuuid'
+const AUTOMATED_CLEARANCE_COOKIE = '__umb_clearance'
+
+const RECAPTCHA_INITIAL_COOKIE = '__umb_rcptch'
+const RECAPTCHA_CLEARANCE_COOKIE = RECAPTCHA_INITIAL_COOKIE + '_clearance'
 
 const PROXY_HOSTNAME = 'x-forwarded-hostname'
 const PROXY_PROTO = 'x-forwarded-proto'
@@ -88,7 +93,13 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
 
     iterate(options, defaultOptions)
 
-    const automatedFrame = precompile(options.advancedClientChallenging.content, templates.automated.frame)
+    const automatedFrame = precompileAutomated(options.advancedClientChallenging.content, templates.automated.frame)
+    const recaptchaTemplate = precompileRecaptcha(
+        options.recaptcha.siteKey,
+        options.recaptcha.header,
+        options.recaptcha.description,
+        templates.recaptcha.index
+    )
 
     const redis = new Redis({
         host: options.advancedClientChallenging.cacheHost,
@@ -124,18 +135,22 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
         const botsKey = 'bot_' + ip
 
         let bypassChecking = false
+        const bypassCaptcha = false
 
-        const initialOpts: AutomatedOpts = {
+        const initialOpts: AutomatedNCaptchaOpts = {
             ip: ip,
             req: req,
             res: res,
             proxyTrusted: options.isProxyTrusted,
-            umbressCookieName: UMBRESS_COOKIE_NAME,
+            automatedCookieName: AUTOMATED_INITIAL_COOKIE,
+            recaptchaCookieName: RECAPTCHA_INITIAL_COOKIE,
             proxyHostname: PROXY_HOSTNAME.replace('www.', ''),
             proxyProto: PROXY_PROTO,
-            template: automatedFrame,
+            automatedTemplate: automatedFrame,
+            recaptchaTemplate: recaptchaTemplate,
             cache: redis,
-            cookieTtl: options.advancedClientChallenging.cookieTtl
+            automatedCookieTtl: options.advancedClientChallenging.cookieTtl,
+            recaptchaCookieTtl: options.recaptcha.cookieTtl
         }
 
         /**
@@ -169,7 +184,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                     } else {
                         if (!options.blacklist.includes(ip)) {
                             if (options.advancedClientChallenging.enabled) {
-                                return await sendAutomated(initialOpts)
+                                return await sendInitialAutomated(initialOpts)
                             } else {
                                 options.blacklist.push(ip)
                                 return res.status(403).end()
@@ -203,11 +218,11 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
-                        return await sendAutomated(initialOpts)
+                        return await sendInitialAutomated(initialOpts)
                     }
                 } else {
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
-                        return await sendAutomated(initialOpts)
+                        return await sendInitialAutomated(initialOpts)
                     }
 
                     if (options.geoipRule.otherwise === 'block') {
@@ -221,7 +236,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
-                        return await sendAutomated(initialOpts)
+                        return await sendInitialAutomated(initialOpts)
                     }
                 } else {
                     if (options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'pass') {
@@ -229,8 +244,50 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
-                        return await sendAutomated(initialOpts)
+                        return await sendInitialAutomated(initialOpts)
                     }
+                }
+            }
+        }
+
+        /**
+         * Recaptcha for all users
+         */
+
+        const isFirstCaptchaCookie = !!req.headers.cookie && req.headers.cookie.includes(RECAPTCHA_INITIAL_COOKIE)
+        const allCaptchaCookies = isFirstCaptchaCookie && req.headers.cookie.includes(RECAPTCHA_CLEARANCE_COOKIE)
+
+        if (options.recaptcha.enabled || (isFirstCaptchaCookie && !allCaptchaCookies)) {
+            if (req.method === 'POST' && '__umb_rcptch_cb' in req.query) {
+                if (!req.body) return await sendCaptcha(initialOpts)
+                if ('g-recaptcha-response' in req.body === false) return await sendCaptcha(initialOpts)
+
+                const gresponse = await fetch(
+                    `https://www.google.com/recaptcha/api/siteverify?secret=${options.recaptcha.secretKey}&response=${req.body['g-recaptcha-response']}&remoteip=${ip}`,
+                    {
+                        method: 'POST'
+                    }
+                ).then(res => res.json())
+
+                if (gresponse.success === false) return await sendCaptcha(initialOpts)
+
+                return res
+                    .cookie(RECAPTCHA_CLEARANCE_COOKIE, uuidv4(), {
+                        expires: new Date(parseInt(req.query['__umb_rcptch_cb'].split('_')[1]) * 1000),
+                        domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
+                        httpOnly: true,
+                        sameSite: 'Lax',
+                        secure: options.isProxyTrusted ? req.headers[PROXY_PROTO] === 'https' : req.protocol === 'https'
+                    })
+                    .redirect(
+                        301,
+                        `${options.isProxyTrusted ? req.headers[PROXY_PROTO] : req.protocol}://${
+                            options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname
+                        }${req.path}`
+                    )
+            } else {
+                if (!allCaptchaCookies && !bypassCaptcha) {
+                    return await sendCaptcha(initialOpts)
                 }
             }
         }
@@ -239,13 +296,13 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
          * Advanced client challenging
          */
 
-        const isFirstCookie = !!req.headers.cookie && req.headers.cookie.includes(UMBRESS_COOKIE_NAME)
-        const allCookies = isFirstCookie && req.headers.cookie.includes(CLEARANCE_COOKIE_NAME)
+        const isFirstAutomatedCookie = !!req.headers.cookie && req.headers.cookie.includes(AUTOMATED_INITIAL_COOKIE)
+        const allAutomatedCookies = isFirstAutomatedCookie && req.headers.cookie.includes(AUTOMATED_CLEARANCE_COOKIE)
 
-        if (options.advancedClientChallenging.enabled === true || (isFirstCookie && !allCookies)) {
+        if (options.advancedClientChallenging.enabled || (isFirstAutomatedCookie && !allAutomatedCookies)) {
             if (req.method === 'POST' && '__umbuid' in req.query) {
-                if (!req.body) return await sendAutomated(initialOpts)
-                if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendAutomated(initialOpts)
+                if (!req.body) return await sendInitialAutomated(initialOpts)
+                if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendInitialAutomated(initialOpts)
 
                 const bd: { sk: string; jschallenge: string } = req.body
 
@@ -263,7 +320,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
 
                 if (answer === parseInt(bd.jschallenge)) {
                     return res
-                        .cookie(CLEARANCE_COOKIE_NAME, uuidv4(), {
+                        .cookie(AUTOMATED_CLEARANCE_COOKIE, uuidv4(), {
                             expires: new Date(parseInt(req.query['__umbuid'].split('_')[1]) * 1000),
                             domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
                             httpOnly: true,
@@ -279,10 +336,11 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                             }${req.path}`
                         )
                 }
-                return await sendAutomated(initialOpts)
+                return await sendInitialAutomated(initialOpts)
             } else {
-                if (allCookies || bypassChecking === true) return next()
-                else return await sendAutomated(initialOpts)
+                if (!allAutomatedCookies && !bypassChecking) {
+                    return await sendInitialAutomated(initialOpts)
+                }
             }
         }
 
@@ -383,7 +441,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                     if (options.checkSuspiciousAddresses.action === 'block') {
                         return res.status(403).end()
                     } else if (options.checkSuspiciousAddresses.action === 'check') {
-                        return await sendAutomated({
+                        return await sendInitialAutomated({
                             ...initialOpts,
                             ...{ cookieTtl: options.checkSuspiciousAddresses.cookieTtl }
                         })
