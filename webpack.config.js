@@ -13,7 +13,8 @@ module.exports = {
         paths: PATHS.src
     },
     entry: {
-        automated: path.resolve(PATHS.src, 'automated.ts')
+        automated: path.resolve(PATHS.src, 'automated.ts'),
+        recaptcha: path.resolve(PATHS.src, 'recaptcha.ts')
     },
     output: {
         path: PATHS.dist,

@@ -18,6 +18,7 @@
     "exclude": [
         "server/src/__tests__",
         "server/src/automated_test_.ts",
+        "server/src/recaptcha_test_.ts",
         "node_modules",
         "server/dist",
         "public/dist"

@@ -79,8 +79,11 @@ describe('send request with malicious IP, get response with automated check', fu
 
         await request(app)
             .post('/?__umbuid=' + action)
-            .send(`sk=${uuid}&jschallenge=${answer.toString()}`)
-            .set('Cookie', umbuuid)
+            .send(`sk=${uuid}&jschallenge=${answer}`)
+            .set({
+                'X-Forwarded-For': '222.186.42.155',
+                Cookie: umbuuid
+            })
             .expect(301)
 
         done()

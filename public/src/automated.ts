@@ -1,11 +1,3 @@
-/**
- * Core modules
- */
-
-/**
- * Engine modules
- */
-
 import './automated.scss'
 
 /**

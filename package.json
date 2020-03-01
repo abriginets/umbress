@@ -1,12 +1,12 @@
 {
   "name": "umbress",
-  "version": "1.1.11",
+  "version": "1.2.0",
   "description": "Blazing fast ExpressJS anti-DDoS middleware ⚡",
   "main": "server/dist/index.js",
   "scripts": {
     "build": "run-s build-server build-client test",
     "watch-server": "tsc --watch --project ./server/tsconfig.json",
-    "build-server": "run-s clean-server compile-jade compile-server",
+    "build-server": "run-s clean-server build:jade compile-server",
     "watch-client": "webpack --config ./webpack.config.js --watch",
     "build-client": "run-s clean-client compile-client",
     "compile-client": "webpack --config ./webpack.config.js",
@@ -14,10 +14,12 @@
     "clean-server": "rimraf server/dist",
     "clean-client": "rimraf public/dist",
     "build:skip-tests": "run-s build-server build-client",
-    "build-server:skip-tests": "run-s clean-server compile-jade compile-server",
+    "build-server:skip-tests": "run-s clean-server build:jade compile-server",
     "test": "jest --coverage --config config/jest.js --forceExit",
     "test:debug": "jest --detectOpenHandles --runInBand --config config/jest.js",
-    "compile-jade": "pug templates/jade --out templates/compiled"
+    "clean-jade": "rimraf templates/compiled",
+    "compile-jade": "pug templates/jade --out templates/compiled",
+    "build:jade": "run-s clean-jade compile-jade"
   },
   "keywords": [
     "ddos",
@@ -43,6 +45,7 @@
   "author": "JamesJGoodwin",
   "license": "MIT",
   "dependencies": {
+    "cookie": "^0.4.0",
     "ioredis": "^4.14.1",
     "ipaddr.js": "^1.9.1",
     "node-fetch": "^2.6.0",
@@ -51,14 +54,16 @@
   "devDependencies": {
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
+    "@types/cookie": "^0.3.3",
     "@types/delay": "^3.1.0",
     "@types/express": "^4.17.2",
+    "@types/grecaptcha": "^3.0.1",
     "@types/ioredis": "^4.14.7",
     "@types/jest": "^25.1.1",
     "@types/node": "^13.5.3",
     "@types/node-fetch": "^2.5.5",
     "@types/supertest": "^2.0.8",
-    "@types/uuid": "^3.4.7",
+    "@types/uuid": "^3.4.8",
     "@typescript-eslint/eslint-plugin": "^2.8.0",
     "@typescript-eslint/parser": "^2.21.0",
     "autoprefixer": "^9.7.4",
