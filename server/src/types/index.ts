@@ -16,7 +16,7 @@ export interface UmbressOptions {
     checkSuspiciousAddresses?: {
         enabled: boolean
         token: string
-        action?: 'block' | 'check'
+        action?: 'block' | 'check' | 'recaptcha'
         banFor?: number
         cookieTtl?: 1
     }
@@ -45,7 +45,7 @@ export interface UmbressOptions {
     }
 }
 
-type geoipAction = 'block' | 'check' | 'pass'
+type geoipAction = 'block' | 'check' | 'pass' | 'recaptcha'
 
 export interface AbuseIPDBResponse {
     data: {

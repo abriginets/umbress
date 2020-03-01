@@ -127,6 +127,91 @@ describe('test geoip whitelist', function() {
 
         done()
     })
+
+    it('should show recaptcha for whitelisted and check otherwise', async done => {
+        const app = express()
+
+        app.use(express.urlencoded({ extended: true }))
+
+        app.use(
+            umbress({
+                isProxyTrusted: true,
+                geoipRule: {
+                    type: 'whitelist',
+                    codes: ['RU', 'UA', 'BY'],
+                    action: 'recaptcha',
+                    otherwise: 'check'
+                }
+            })
+        )
+
+        app.get('/', function(req, res) {
+            res.send('Passed')
+        })
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '12.34.56.78',
+                'X-Umbress-Country': 'RU'
+            })
+            .expect('Content-type', /html/)
+            .expect(/Prove you are not a robot/)
+            .expect(403)
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '12.34.56.79',
+                'X-Umbress-Country': 'JP'
+            })
+            .expect(503)
+            .expect(/Checking your browser before accessing the website/)
+
+        done()
+    })
+
+    it('should pass whitelisted and show recaptcha otherwise', async done => {
+        const app = express()
+
+        app.use(express.urlencoded({ extended: true }))
+
+        app.use(
+            umbress({
+                isProxyTrusted: true,
+                geoipRule: {
+                    type: 'whitelist',
+                    codes: ['RU', 'UA', 'BY'],
+                    action: 'pass',
+                    otherwise: 'recaptcha'
+                }
+            })
+        )
+
+        app.get('/', function(req, res) {
+            res.send('Passed')
+        })
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '12.34.56.78',
+                'X-Umbress-Country': 'RU'
+            })
+            .expect(200)
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '12.34.56.79',
+                'X-Umbress-Country': 'JP'
+            })
+            .expect('Content-type', /html/)
+            .expect(/Prove you are not a robot/)
+            .expect(403)
+
+        done()
+    })
 })
 
 describe('test geoip blacklist', function() {
@@ -251,6 +336,91 @@ describe('test geoip blacklist', function() {
             })
             .expect(503)
             .expect(/Checking your browser before accessing/)
+
+        done()
+    })
+
+    it('should recaptcha blacklisted and pass otherwise', async done => {
+        const app = express()
+
+        app.use(express.urlencoded({ extended: true }))
+
+        app.use(
+            umbress({
+                isProxyTrusted: true,
+                geoipRule: {
+                    type: 'blacklist',
+                    codes: ['JP', 'CN', 'KR'],
+                    action: 'recaptcha',
+                    otherwise: 'pass'
+                }
+            })
+        )
+
+        app.get('/', function(req, res) {
+            res.send('Passed')
+        })
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '12.34.56.78',
+                'X-Umbress-Country': 'JP'
+            })
+            .expect('Content-type', /html/)
+            .expect(403)
+            .expect(/Prove you are not a robot/)
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '12.34.56.79',
+                'X-Umbress-Country': 'RU'
+            })
+            .expect(200)
+
+        done()
+    })
+
+    it('should check blacklisted and recaptcha otherwise', async done => {
+        const app = express()
+
+        app.use(express.urlencoded({ extended: true }))
+
+        app.use(
+            umbress({
+                isProxyTrusted: true,
+                geoipRule: {
+                    type: 'blacklist',
+                    codes: ['JP', 'CN', 'KR'],
+                    action: 'check',
+                    otherwise: 'recaptcha'
+                }
+            })
+        )
+
+        app.get('/', function(req, res) {
+            res.send('Passed')
+        })
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '12.34.56.78',
+                'X-Umbress-Country': 'JP'
+            })
+            .expect(503)
+            .expect(/Checking your browser before accessing/)
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '12.34.56.79',
+                'X-Umbress-Country': 'RU'
+            })
+            .expect('Content-type', /html/)
+            .expect(403)
+            .expect(/Prove you are not a robot/)
 
         done()
     })

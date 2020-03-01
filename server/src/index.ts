@@ -220,9 +220,17 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
                         return await sendInitialAutomated(initialOpts)
                     }
+
+                    if (!options.recaptcha.enabled && options.geoipRule.action === 'recaptcha') {
+                        return await sendCaptcha(initialOpts)
+                    }
                 } else {
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
                         return await sendInitialAutomated(initialOpts)
+                    }
+
+                    if (!options.recaptcha.enabled && options.geoipRule.otherwise === 'recaptcha') {
+                        return await sendCaptcha(initialOpts)
                     }
 
                     if (options.geoipRule.otherwise === 'block') {
@@ -238,6 +246,10 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
                         return await sendInitialAutomated(initialOpts)
                     }
+
+                    if (!options.recaptcha.enabled && options.geoipRule.action === 'recaptcha') {
+                        return await sendCaptcha(initialOpts)
+                    }
                 } else {
                     if (options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'pass') {
                         bypassChecking = true
@@ -245,6 +257,10 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
                         return await sendInitialAutomated(initialOpts)
+                    }
+
+                    if (!options.recaptcha.enabled && options.geoipRule.otherwise === 'recaptcha') {
+                        return await sendCaptcha(initialOpts)
                     }
                 }
             }
@@ -505,10 +521,19 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                 if (ipData === 'banned') {
                     if (options.checkSuspiciousAddresses.action === 'block') {
                         return res.status(403).end()
-                    } else if (options.checkSuspiciousAddresses.action === 'check') {
+                    }
+
+                    if (options.checkSuspiciousAddresses.action === 'check') {
                         return await sendInitialAutomated({
                             ...initialOpts,
-                            ...{ cookieTtl: options.checkSuspiciousAddresses.cookieTtl }
+                            ...{ automatedCookieTtl: options.checkSuspiciousAddresses.cookieTtl }
+                        })
+                    }
+
+                    if (options.checkSuspiciousAddresses.action === 'recaptcha') {
+                        return await sendCaptcha({
+                            ...initialOpts,
+                            ...{ recaptchaCookieTtl: options.checkSuspiciousAddresses.cookieTtl }
                         })
                     }
                 }
