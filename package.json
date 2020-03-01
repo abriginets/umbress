@@ -45,6 +45,7 @@
   "author": "JamesJGoodwin",
   "license": "MIT",
   "dependencies": {
+    "cookie": "^0.4.0",
     "ioredis": "^4.14.1",
     "ipaddr.js": "^1.9.1",
     "node-fetch": "^2.6.0",
@@ -53,6 +54,7 @@
   "devDependencies": {
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
+    "@types/cookie": "^0.3.3",
     "@types/delay": "^3.1.0",
     "@types/express": "^4.17.2",
     "@types/grecaptcha": "^3.0.1",

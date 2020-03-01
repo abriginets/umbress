@@ -13,6 +13,7 @@ import { UmbressOptions, HtmlTemplates, AutomatedNCaptchaOpts } from './types'
 import fs from 'fs'
 import path from 'path'
 import Redis from 'ioredis'
+import cookie from 'cookie'
 import fetch from 'node-fetch'
 import { v4 as uuidv4 } from 'uuid'
 import { promises as dns } from 'dns'
@@ -254,8 +255,10 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
          * Recaptcha for all users
          */
 
-        const isFirstCaptchaCookie = !!req.headers.cookie && req.headers.cookie.includes(RECAPTCHA_INITIAL_COOKIE)
-        const allCaptchaCookies = isFirstCaptchaCookie && req.headers.cookie.includes(RECAPTCHA_CLEARANCE_COOKIE)
+        const cookies = cookie.parse(req.headers.cookie || '') // cookies for both automated and recaptcha
+
+        const isFirstCaptchaCookie = RECAPTCHA_INITIAL_COOKIE in cookies && !(RECAPTCHA_CLEARANCE_COOKIE in cookies)
+        const allCaptchaCookies = RECAPTCHA_INITIAL_COOKIE in cookies && RECAPTCHA_CLEARANCE_COOKIE in cookies
 
         if (options.recaptcha.enabled || (isFirstCaptchaCookie && !allCaptchaCookies)) {
             if (req.method === 'POST' && '__umb_rcptch_cb' in req.query) {
@@ -296,50 +299,79 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
          * Advanced client challenging
          */
 
-        const isFirstAutomatedCookie = !!req.headers.cookie && req.headers.cookie.includes(AUTOMATED_INITIAL_COOKIE)
-        const allAutomatedCookies = isFirstAutomatedCookie && req.headers.cookie.includes(AUTOMATED_CLEARANCE_COOKIE)
+        const isFirstAutomatedCookie = AUTOMATED_INITIAL_COOKIE in cookies && !(AUTOMATED_CLEARANCE_COOKIE in cookies)
+        const allAutomatedCookies = AUTOMATED_INITIAL_COOKIE in cookies && AUTOMATED_CLEARANCE_COOKIE in cookies
 
         if (options.advancedClientChallenging.enabled || (isFirstAutomatedCookie && !allAutomatedCookies)) {
+            const passedKey = `automatedPassed_${ip}`
+
             if (req.method === 'POST' && '__umbuid' in req.query) {
                 if (!req.body) return await sendInitialAutomated(initialOpts)
                 if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendInitialAutomated(initialOpts)
 
-                const bd: { sk: string; jschallenge: string } = req.body
+                const uuidPair = await redis.get(`automatedUuidCache_${ip}`)
 
-                const dict = '0123456789',
-                    numbers: number[] = [],
-                    letters: string[] = []
+                if (uuidPair !== null) {
+                    const uuidPairParsed = uuidPair.split('_')
+                    const bd: { sk: string; jschallenge: string } = req.body
+                    const dict = '0123456789'
+                    const numbers: number[] = []
+                    const letters: string[] = []
 
-                bd.sk.split('').forEach(symbol => {
-                    if (dict.includes(symbol)) numbers.push(parseInt(symbol))
-                    else letters.push(symbol)
-                })
+                    bd.sk.split('').forEach(symbol => {
+                        if (dict.includes(symbol)) numbers.push(parseInt(symbol))
+                        else letters.push(symbol)
+                    })
 
-                const answer =
-                    numbers.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) * letters.length
+                    const answer =
+                        numbers.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) *
+                        letters.length
 
-                if (answer === parseInt(bd.jschallenge)) {
-                    return res
-                        .cookie(AUTOMATED_CLEARANCE_COOKIE, uuidv4(), {
-                            expires: new Date(parseInt(req.query['__umbuid'].split('_')[1]) * 1000),
-                            domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
-                            httpOnly: true,
-                            sameSite: 'Lax',
-                            secure: options.isProxyTrusted
-                                ? req.headers[PROXY_PROTO] === 'https'
-                                : req.protocol === 'https'
-                        })
-                        .redirect(
-                            301,
-                            `${options.isProxyTrusted ? req.headers[PROXY_PROTO] : req.protocol}://${
-                                options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname
-                            }${req.path}`
+                    if (answer === parseInt(bd.jschallenge)) {
+                        await redis.set(
+                            passedKey,
+                            `${uuidPairParsed[0]}_${uuidPairParsed[1]}`,
+                            'EX',
+                            parseInt(uuidPairParsed[2]) - Math.round(new Date().valueOf() / 1000)
                         )
+
+                        return res
+                            .cookie(AUTOMATED_CLEARANCE_COOKIE, uuidPairParsed[1], {
+                                expires: new Date(parseInt(uuidPairParsed[2]) * 1000),
+                                domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
+                                httpOnly: true,
+                                sameSite: 'Lax',
+                                secure: options.isProxyTrusted
+                                    ? req.headers[PROXY_PROTO] === 'https'
+                                    : req.protocol === 'https'
+                            })
+                            .redirect(
+                                301,
+                                `${options.isProxyTrusted ? req.headers[PROXY_PROTO] : req.protocol}://${
+                                    options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname
+                                }${req.path}`
+                            )
+                    }
                 }
                 return await sendInitialAutomated(initialOpts)
             } else {
                 if (!allAutomatedCookies && !bypassChecking) {
                     return await sendInitialAutomated(initialOpts)
+                } else {
+                    if (allAutomatedCookies) {
+                        const cookiesInCache = await redis.get(passedKey)
+
+                        if (cookiesInCache !== null) {
+                            if (
+                                cookiesInCache !==
+                                cookies[AUTOMATED_INITIAL_COOKIE] + '_' + cookies[AUTOMATED_CLEARANCE_COOKIE]
+                            ) {
+                                return await sendInitialAutomated(initialOpts)
+                            }
+                        } else {
+                            return await sendInitialAutomated(initialOpts)
+                        }
+                    }
                 }
             }
         }

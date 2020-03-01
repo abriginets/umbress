@@ -20,7 +20,8 @@ app.use(express.urlencoded({ extended: true }))
 app.use(
     umbress({
         advancedClientChallenging: {
-            enabled: true
+            enabled: true,
+            cookieTtl: 0.000231481
         }
     })
 )

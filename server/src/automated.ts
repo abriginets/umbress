@@ -18,19 +18,24 @@ import { getPublicAsset, getRandomQuery } from './helpers'
  */
 
 export async function sendInitialAutomated(options: AutomatedNCaptchaOpts): Promise<express.Response> {
-    const uuidCacheKey = 'uuidCache_' + options.ip + '_' + options.req.headers['user-agent']
-    let uuid = ''
+    let expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * options.automatedCookieTtl)
+    let expiresInSecs = Math.round(expires.valueOf() / 1000).toString()
 
+    const uuidCacheKey = `automatedUuidCache_${options.ip}`
     const cachedUuid = await options.cache.get(uuidCacheKey)
 
+    let uuid = ''
+
     if (cachedUuid !== null) {
-        uuid = cachedUuid
+        uuid = cachedUuid.split('_')[0]
+        expiresInSecs = cachedUuid.split('_')[2]
+        expires = new Date(parseInt(expiresInSecs) * 1000)
     } else {
-        uuid = uuidv4()
-        await options.cache.set(uuidCacheKey, uuid, 'EX', 4)
+        const keyPair = `${uuidv4()}_${uuidv4()}_${expiresInSecs}`
+        uuid = keyPair.split('_')[0]
+        await options.cache.set(uuidCacheKey, keyPair, 'EX', 10)
     }
 
-    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * options.automatedCookieTtl)
     const randomQuery = getRandomQuery(128)
 
     return options.res
@@ -44,12 +49,7 @@ export async function sendInitialAutomated(options: AutomatedNCaptchaOpts): Prom
                 ? options.req.headers[options.proxyProto] === 'https'
                 : options.req.protocol === 'https'
         })
-        .send(
-            options.automatedTemplate
-                .replace('%randCacheBypass%', randomQuery)
-                .replace('%cookieTimestamp%', Math.round(expires.valueOf() / 1000).toString())
-                .replace('%uuid%', uuid)
-        )
+        .send(options.automatedTemplate.replace('%randCacheBypass%', randomQuery).replace('%uuid%', uuid))
 }
 
 export function precompileAutomated(userContent: string, frame: string): string {
