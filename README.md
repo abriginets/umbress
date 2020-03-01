@@ -22,12 +22,13 @@
 of detection and mitigation like crawlers authenticity checks, malicious IP addresses access mitigation (based on <a href="https://www.abuseipdb.com/" target="_blank">AbuseIPDB</a> data), advanced client-side JavaScript challenging, GeoIP manager, etc.
 
 ## Features
+- Recaptcha
 - Rate-limiter
+- GeoIP manager
 - Malicious IP checker
+- Crawlers authenticity checker
 - Whitelists and blacklists for single IPs or subnets
 - Client-side JavaScript-challenging (like CloudFlare's UAM)
-- Crawlers authenticity checker
-- GeoIP manager
 
 ## Requirements
 
@@ -43,7 +44,7 @@ $ npm install umbress --save
 
 ## Usage
 
-**❗ Important:** Umbress relies on another middleware in some combinations of configuration so when you set `advancedClientChallenging.enabled = true`, `checkSuspiciousAddresses.action = 'check'`, `geoipRule.action = 'check'` and `geoipRule.otherwise = 'check'` it is mandatory to add the next lines of code:
+**❗ Important:** Umbress relies on another middleware in some combinations of configuration so when you set `advancedClientChallenging.enabled = true`, `recaptcha.enabled = true`, `checkSuspiciousAddresses.action = 'check' | 'recaptcha'`, `geoipRule.action = 'check' | 'recaptcha'` and `geoipRule.otherwise = 'check' | 'recaptcha'` it is mandatory to add the next lines of code:
 
 ```typescript
 // ExpressJS above 4.16.0
