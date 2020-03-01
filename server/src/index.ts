@@ -4,18 +4,19 @@
  * MIT Licensed
  */
 
-import { UmbressOptions } from './types'
+import { UmbressOptions, HtmlTemplates, AutomatedNCaptchaOpts } from './types'
 
 /**
  * Core Modules
  */
 
 import fs from 'fs'
-import net, { isIPv4, isIPv6 } from 'net'
 import path from 'path'
 import Redis from 'ioredis'
-import uuidv4 from 'uuid/v4'
+import cookie from 'cookie'
+import fetch from 'node-fetch'
 import { promises as dns } from 'dns'
+import net, { isIPv4, isIPv6 } from 'net'
 import { Request as Req, Response as Res, NextFunction as Next } from 'express'
 
 /**
@@ -26,7 +27,8 @@ import { defaults } from './defaults'
 import { checkAddress } from './abuseipdb'
 import { isIpInSubnets, isIpInList } from './ip'
 import { getAddress, iterate, merge } from './helpers'
-import { sendInitial, precompile, Opts as AutomatedOpts } from './automated'
+import { precompileRecaptcha, sendCaptcha } from './recaptcha'
+import { sendInitialAutomated, precompileAutomated } from './automated'
 
 /**
  * Logic
@@ -54,8 +56,11 @@ const BOTS_HOSTNAME_REGEX = /(google(bot)?.com|yandex\.(com|net|ru)|search\.msn\
 
 const NON_HOSTNAMEABLE_BOTS = /Twitterbot|facebookexternalhit|vkShare/
 
-const CLEARANCE_COOKIE_NAME = '__umb_clearance'
-const UMBRESS_COOKIE_NAME = '__umbuuid'
+const AUTOMATED_INITIAL_COOKIE = '__umbuuid'
+const AUTOMATED_CLEARANCE_COOKIE = '__umb_clearance'
+
+const RECAPTCHA_INITIAL_COOKIE = '__umb_rcptch'
+const RECAPTCHA_CLEARANCE_COOKIE = RECAPTCHA_INITIAL_COOKIE + '_clearance'
 
 const PROXY_HOSTNAME = 'x-forwarded-hostname'
 const PROXY_PROTO = 'x-forwarded-proto'
@@ -65,22 +70,36 @@ const CACHE_PREFIX = 'umbress_'
 
 const templatesPath = '../../templates/compiled'
 
-export default function umbress(instanceOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
-    const templates: { [key: string]: string } = {}
+export default function umbress(userOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
+    const templates: HtmlTemplates = {}
+    const compiledPath = path.join(__dirname, templatesPath)
 
-    fs.readdirSync(path.join(__dirname, templatesPath)).forEach(filename => {
-        templates[filename.replace('.html', '')] = fs.readFileSync(
-            path.join(__dirname, templatesPath + '/' + filename),
-            { encoding: 'utf-8' }
-        )
+    fs.readdirSync(compiledPath).forEach(f => {
+        if (f in templates === false) {
+            templates[f] = {}
+        }
+
+        const filesPath = path.resolve(compiledPath, f)
+
+        fs.readdirSync(filesPath).forEach(h => {
+            const filePath = path.resolve(filesPath, h)
+
+            templates[f][h.split('.html')[0]] = fs.readFileSync(filePath, { encoding: 'utf-8' })
+        })
     })
 
-    const defaultOptions = defaults(templates.face)
-    const options = merge(defaultOptions, instanceOptions)
+    const defaultOptions = defaults(templates.automated.face)
+    const options = merge(defaultOptions, userOptions)
 
     iterate(options, defaultOptions)
 
-    const precompiledFrame = precompile(options.advancedClientChallenging.content, templates.frame)
+    const automatedFrame = precompileAutomated(options.advancedClientChallenging.content, templates.automated.frame)
+    const recaptchaTemplate = precompileRecaptcha(
+        options.recaptcha.siteKey,
+        options.recaptcha.header,
+        options.recaptcha.description,
+        templates.recaptcha.index
+    )
 
     const redis = new Redis({
         host: options.advancedClientChallenging.cacheHost,
@@ -114,19 +133,24 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
         const ratelimiterCachePrefix = 'ratelimiter_'
         const suspiciousJailPrefix = 'abuseipdb_'
         const botsKey = 'bot_' + ip
-        let bypassChecking = false
 
-        const initialOpts: AutomatedOpts = {
+        let bypassChecking = false
+        const bypassCaptcha = false
+
+        const initialOpts: AutomatedNCaptchaOpts = {
             ip: ip,
             req: req,
             res: res,
             proxyTrusted: options.isProxyTrusted,
-            umbressCookieName: UMBRESS_COOKIE_NAME,
+            automatedCookieName: AUTOMATED_INITIAL_COOKIE,
+            recaptchaCookieName: RECAPTCHA_INITIAL_COOKIE,
             proxyHostname: PROXY_HOSTNAME.replace('www.', ''),
             proxyProto: PROXY_PROTO,
-            template: precompiledFrame,
+            automatedTemplate: automatedFrame,
+            recaptchaTemplate: recaptchaTemplate,
             cache: redis,
-            cookieTtl: options.advancedClientChallenging.cookieTtl
+            automatedCookieTtl: options.advancedClientChallenging.cookieTtl,
+            recaptchaCookieTtl: options.recaptcha.cookieTtl
         }
 
         /**
@@ -160,7 +184,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     } else {
                         if (!options.blacklist.includes(ip)) {
                             if (options.advancedClientChallenging.enabled) {
-                                return await sendInitial(initialOpts)
+                                return await sendInitialAutomated(initialOpts)
                             } else {
                                 options.blacklist.push(ip)
                                 return res.status(403).end()
@@ -194,11 +218,11 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendInitialAutomated(initialOpts)
                     }
                 } else {
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendInitialAutomated(initialOpts)
                     }
 
                     if (options.geoipRule.otherwise === 'block') {
@@ -212,7 +236,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendInitialAutomated(initialOpts)
                     }
                 } else {
                     if (options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'pass') {
@@ -220,42 +244,53 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
-                        return await sendInitial(initialOpts)
+                        return await sendInitialAutomated(initialOpts)
                     }
                 }
             }
         }
 
         /**
-         * Advanced client challenging
+         * Recaptcha for all users
          */
 
-        const isFirstCookie = !!req.headers.cookie && req.headers.cookie.includes(UMBRESS_COOKIE_NAME)
-        const allCookies = isFirstCookie && req.headers.cookie.includes(CLEARANCE_COOKIE_NAME)
+        // cookies for both automated and recaptcha
+        const cookies = cookie.parse(req.headers.cookie || '')
 
-        if (options.advancedClientChallenging.enabled === true || (isFirstCookie && !allCookies)) {
-            if (req.method === 'POST' && '__umbuid' in req.query) {
-                if (!req.body) return await sendInitial(initialOpts)
-                if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendInitial(initialOpts)
+        const isFirstCaptchaCookie = RECAPTCHA_INITIAL_COOKIE in cookies && !(RECAPTCHA_CLEARANCE_COOKIE in cookies)
+        const allCaptchaCookies = RECAPTCHA_INITIAL_COOKIE in cookies && RECAPTCHA_CLEARANCE_COOKIE in cookies
 
-                const bd: { sk: string; jschallenge: string } = req.body
+        if (options.recaptcha.enabled || (isFirstCaptchaCookie && !allCaptchaCookies)) {
+            const passedKey = `recaptchaPassed_${ip}`
 
-                const dict = '0123456789',
-                    numbers: number[] = [],
-                    letters: string[] = []
+            if (req.method === 'POST' && '__umb_rcptch_cb' in req.query) {
+                if (!req.body) return await sendCaptcha(initialOpts)
+                if ('g-recaptcha-response' in req.body === false) return await sendCaptcha(initialOpts)
 
-                bd.sk.split('').forEach(symbol => {
-                    if (dict.includes(symbol)) numbers.push(parseInt(symbol))
-                    else letters.push(symbol)
-                })
+                const uuidPair = await redis.get(`recaptchaUuidCache_${ip}`)
 
-                const answer =
-                    numbers.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) * letters.length
+                if (uuidPair !== null) {
+                    const uuidPairParsed = uuidPair.split('_')
 
-                if (answer === parseInt(bd.jschallenge)) {
+                    const gresponse = await fetch(
+                        `https://www.google.com/recaptcha/api/siteverify?secret=${options.recaptcha.secretKey}&response=${req.body['g-recaptcha-response']}&remoteip=${ip}`,
+                        {
+                            method: 'POST'
+                        }
+                    ).then(res => res.json())
+
+                    if (gresponse.success === false) return await sendCaptcha(initialOpts)
+
+                    await redis.set(
+                        passedKey,
+                        `${uuidPairParsed[0]}_${uuidPairParsed[1]}`,
+                        'EX',
+                        parseInt(uuidPairParsed[2]) - Math.round(new Date().valueOf() / 1000)
+                    )
+
                     return res
-                        .cookie(CLEARANCE_COOKIE_NAME, uuidv4(), {
-                            expires: new Date(parseInt(req.query['__umbuid'].split('_')[1]) * 1000),
+                        .cookie(RECAPTCHA_CLEARANCE_COOKIE, uuidPairParsed[1], {
+                            expires: new Date(parseInt(uuidPairParsed[2]) * 1000),
                             domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
                             httpOnly: true,
                             sameSite: 'Lax',
@@ -270,10 +305,107 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                             }${req.path}`
                         )
                 }
-                return await sendInitial(initialOpts)
+                return sendCaptcha(initialOpts)
             } else {
-                if (allCookies || bypassChecking === true) return next()
-                else return await sendInitial(initialOpts)
+                if (!allCaptchaCookies && !bypassCaptcha) {
+                    return await sendCaptcha(initialOpts)
+                } else {
+                    if (allCaptchaCookies) {
+                        const cookiesInCache = await redis.get(passedKey)
+
+                        if (cookiesInCache !== null) {
+                            if (
+                                cookiesInCache !==
+                                cookies[RECAPTCHA_INITIAL_COOKIE] + '_' + cookies[RECAPTCHA_CLEARANCE_COOKIE]
+                            ) {
+                                return await sendCaptcha(initialOpts)
+                            }
+                        } else {
+                            return await sendCaptcha(initialOpts)
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * Advanced client challenging
+         */
+
+        const isFirstAutomatedCookie = AUTOMATED_INITIAL_COOKIE in cookies && !(AUTOMATED_CLEARANCE_COOKIE in cookies)
+        const allAutomatedCookies = AUTOMATED_INITIAL_COOKIE in cookies && AUTOMATED_CLEARANCE_COOKIE in cookies
+
+        if (options.advancedClientChallenging.enabled || (isFirstAutomatedCookie && !allAutomatedCookies)) {
+            const passedKey = `automatedPassed_${ip}`
+
+            if (req.method === 'POST' && '__umbuid' in req.query) {
+                if (!req.body) return await sendInitialAutomated(initialOpts)
+                if (!('sk' in req.body) || !('jschallenge' in req.body)) return await sendInitialAutomated(initialOpts)
+
+                const uuidPair = await redis.get(`automatedUuidCache_${ip}`)
+
+                if (uuidPair !== null) {
+                    const uuidPairParsed = uuidPair.split('_')
+                    const bd: { sk: string; jschallenge: string } = req.body
+                    const dict = '0123456789'
+                    const numbers: number[] = []
+                    const letters: string[] = []
+
+                    bd.sk.split('').forEach(symbol => {
+                        if (dict.includes(symbol)) numbers.push(parseInt(symbol))
+                        else letters.push(symbol)
+                    })
+
+                    const answer =
+                        numbers.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) *
+                        letters.length
+
+                    if (answer === parseInt(bd.jschallenge)) {
+                        await redis.set(
+                            passedKey,
+                            `${uuidPairParsed[0]}_${uuidPairParsed[1]}`,
+                            'EX',
+                            parseInt(uuidPairParsed[2]) - Math.round(new Date().valueOf() / 1000)
+                        )
+
+                        return res
+                            .cookie(AUTOMATED_CLEARANCE_COOKIE, uuidPairParsed[1], {
+                                expires: new Date(parseInt(uuidPairParsed[2]) * 1000),
+                                domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
+                                httpOnly: true,
+                                sameSite: 'Lax',
+                                secure: options.isProxyTrusted
+                                    ? req.headers[PROXY_PROTO] === 'https'
+                                    : req.protocol === 'https'
+                            })
+                            .redirect(
+                                301,
+                                `${options.isProxyTrusted ? req.headers[PROXY_PROTO] : req.protocol}://${
+                                    options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname
+                                }${req.path}`
+                            )
+                    }
+                }
+                return await sendInitialAutomated(initialOpts)
+            } else {
+                if (!allAutomatedCookies && !bypassChecking) {
+                    return await sendInitialAutomated(initialOpts)
+                } else {
+                    if (allAutomatedCookies) {
+                        const cookiesInCache = await redis.get(passedKey)
+
+                        if (cookiesInCache !== null) {
+                            if (
+                                cookiesInCache !==
+                                cookies[AUTOMATED_INITIAL_COOKIE] + '_' + cookies[AUTOMATED_CLEARANCE_COOKIE]
+                            ) {
+                                return await sendInitialAutomated(initialOpts)
+                            }
+                        } else {
+                            return await sendInitialAutomated(initialOpts)
+                        }
+                    }
+                }
             }
         }
 
@@ -374,7 +506,7 @@ export default function umbress(instanceOptions: UmbressOptions): (req: Req, res
                     if (options.checkSuspiciousAddresses.action === 'block') {
                         return res.status(403).end()
                     } else if (options.checkSuspiciousAddresses.action === 'check') {
-                        return await sendInitial({
+                        return await sendInitialAutomated({
                             ...initialOpts,
                             ...{ cookieTtl: options.checkSuspiciousAddresses.cookieTtl }
                         })

@@ -19,8 +19,10 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use(
     umbress({
-        advancedClientChallenging: {
+        recaptcha: {
             enabled: true,
+            siteKey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
+            secretKey: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe',
             cookieTtl: 0.000231481
         }
     })

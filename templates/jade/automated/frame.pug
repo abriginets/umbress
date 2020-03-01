@@ -12,7 +12,7 @@ html
             noscript
                 h1 You need to have JavaScript enabled to see the requested content
             .usercontent(style='display: none') %user_content%
-            form(id='challenge-form' method='POST' action='?__umbuid=%randCacheBypass%_%cookieTimestamp%' enctype='application/x-www-form-urlencoded')
+            form(id='challenge-form' method='POST' action='?__umbuid=%randCacheBypass%' enctype='application/x-www-form-urlencoded')
                 input(type='hidden' id='skuid' name='sk' value='%uuid%')
                 input(type='hidden' id='jschallenge_answer' name='jschallenge')
         script(type='text/javascript')
