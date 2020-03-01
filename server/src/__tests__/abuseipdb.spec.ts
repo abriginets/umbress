@@ -202,3 +202,44 @@ describe('send request with good IP, access should be granted', function() {
         done()
     }, 10_000)
 })
+
+describe('send request with bad ip, get recaptcha', function() {
+    const app = express()
+
+    app.use(express.urlencoded({ extended: true }))
+
+    app.use(
+        umbress({
+            isProxyTrusted: true,
+            checkSuspiciousAddresses: {
+                enabled: true,
+                token: process.env.ABUSEIPDB_TOKEN,
+                action: 'recaptcha'
+            }
+        })
+    )
+
+    app.get('/', function(req, res) {
+        res.send('Access granted!')
+    })
+
+    it('should throw recaptcha', async done => {
+        await request(app)
+            .get('/')
+            .set('X-Forwarded-For', '148.70.32.179')
+            .expect('Content-type', /html/)
+            .expect(200)
+            .expect('Access granted!')
+
+        await delay(5000)
+
+        await request(app)
+            .get('/')
+            .set('X-Forwarded-For', '148.70.32.179')
+            .expect('Content-type', /html/)
+            .expect(403)
+            .expect(/Prove you are not a robot/)
+
+        done()
+    }, 10_000)
+})
