@@ -16,6 +16,6 @@ html
             .recaptcha-content
                 h1(style='display: none') %captcha_header%
                 p(style='display: none') %captcha_text%
-                form#grecaptcha_form(action='?__umb_rcptch_cb=%randCacheBypass%_%cookieTimestamp%' method='POST')
+                form#grecaptcha_form(action='?__umb_rcptch_cb=%randCacheBypass%' method='POST')
                     div(id='recaptcha_container')
         script(src='https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit' async defer)

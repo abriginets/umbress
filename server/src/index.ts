@@ -15,7 +15,6 @@ import path from 'path'
 import Redis from 'ioredis'
 import cookie from 'cookie'
 import fetch from 'node-fetch'
-import { v4 as uuidv4 } from 'uuid'
 import { promises as dns } from 'dns'
 import net, { isIPv4, isIPv6 } from 'net'
 import { Request as Req, Response as Res, NextFunction as Next } from 'express'
@@ -255,42 +254,76 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
          * Recaptcha for all users
          */
 
-        const cookies = cookie.parse(req.headers.cookie || '') // cookies for both automated and recaptcha
+        // cookies for both automated and recaptcha
+        const cookies = cookie.parse(req.headers.cookie || '')
 
         const isFirstCaptchaCookie = RECAPTCHA_INITIAL_COOKIE in cookies && !(RECAPTCHA_CLEARANCE_COOKIE in cookies)
         const allCaptchaCookies = RECAPTCHA_INITIAL_COOKIE in cookies && RECAPTCHA_CLEARANCE_COOKIE in cookies
 
         if (options.recaptcha.enabled || (isFirstCaptchaCookie && !allCaptchaCookies)) {
+            const passedKey = `recaptchaPassed_${ip}`
+
             if (req.method === 'POST' && '__umb_rcptch_cb' in req.query) {
                 if (!req.body) return await sendCaptcha(initialOpts)
                 if ('g-recaptcha-response' in req.body === false) return await sendCaptcha(initialOpts)
 
-                const gresponse = await fetch(
-                    `https://www.google.com/recaptcha/api/siteverify?secret=${options.recaptcha.secretKey}&response=${req.body['g-recaptcha-response']}&remoteip=${ip}`,
-                    {
-                        method: 'POST'
-                    }
-                ).then(res => res.json())
+                const uuidPair = await redis.get(`recaptchaUuidCache_${ip}`)
 
-                if (gresponse.success === false) return await sendCaptcha(initialOpts)
+                if (uuidPair !== null) {
+                    const uuidPairParsed = uuidPair.split('_')
 
-                return res
-                    .cookie(RECAPTCHA_CLEARANCE_COOKIE, uuidv4(), {
-                        expires: new Date(parseInt(req.query['__umb_rcptch_cb'].split('_')[1]) * 1000),
-                        domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
-                        httpOnly: true,
-                        sameSite: 'Lax',
-                        secure: options.isProxyTrusted ? req.headers[PROXY_PROTO] === 'https' : req.protocol === 'https'
-                    })
-                    .redirect(
-                        301,
-                        `${options.isProxyTrusted ? req.headers[PROXY_PROTO] : req.protocol}://${
-                            options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname
-                        }${req.path}`
+                    const gresponse = await fetch(
+                        `https://www.google.com/recaptcha/api/siteverify?secret=${options.recaptcha.secretKey}&response=${req.body['g-recaptcha-response']}&remoteip=${ip}`,
+                        {
+                            method: 'POST'
+                        }
+                    ).then(res => res.json())
+
+                    if (gresponse.success === false) return await sendCaptcha(initialOpts)
+
+                    await redis.set(
+                        passedKey,
+                        `${uuidPairParsed[0]}_${uuidPairParsed[1]}`,
+                        'EX',
+                        parseInt(uuidPairParsed[2]) - Math.round(new Date().valueOf() / 1000)
                     )
+
+                    return res
+                        .cookie(RECAPTCHA_CLEARANCE_COOKIE, uuidPairParsed[1], {
+                            expires: new Date(parseInt(uuidPairParsed[2]) * 1000),
+                            domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
+                            httpOnly: true,
+                            sameSite: 'Lax',
+                            secure: options.isProxyTrusted
+                                ? req.headers[PROXY_PROTO] === 'https'
+                                : req.protocol === 'https'
+                        })
+                        .redirect(
+                            301,
+                            `${options.isProxyTrusted ? req.headers[PROXY_PROTO] : req.protocol}://${
+                                options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname
+                            }${req.path}`
+                        )
+                }
+                return sendCaptcha(initialOpts)
             } else {
                 if (!allCaptchaCookies && !bypassCaptcha) {
                     return await sendCaptcha(initialOpts)
+                } else {
+                    if (allCaptchaCookies) {
+                        const cookiesInCache = await redis.get(passedKey)
+
+                        if (cookiesInCache !== null) {
+                            if (
+                                cookiesInCache !==
+                                cookies[RECAPTCHA_INITIAL_COOKIE] + '_' + cookies[RECAPTCHA_CLEARANCE_COOKIE]
+                            ) {
+                                return await sendCaptcha(initialOpts)
+                            }
+                        } else {
+                            return await sendCaptcha(initialOpts)
+                        }
+                    }
                 }
             }
         }

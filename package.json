@@ -6,7 +6,7 @@
   "scripts": {
     "build": "run-s build-server build-client test",
     "watch-server": "tsc --watch --project ./server/tsconfig.json",
-    "build-server": "run-s clean-server build-jade compile-server",
+    "build-server": "run-s clean-server build:jade compile-server",
     "watch-client": "webpack --config ./webpack.config.js --watch",
     "build-client": "run-s clean-client compile-client",
     "compile-client": "webpack --config ./webpack.config.js",
