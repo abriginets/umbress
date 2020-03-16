@@ -309,7 +309,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                             expires: new Date(parseInt(uuidPairParsed[2]) * 1000),
                             domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
                             httpOnly: true,
-                            sameSite: 'Lax',
+                            sameSite: 'lax',
                             secure: options.isProxyTrusted
                                 ? req.headers[PROXY_PROTO] === 'https'
                                 : req.protocol === 'https'
@@ -389,7 +389,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                                 expires: new Date(parseInt(uuidPairParsed[2]) * 1000),
                                 domain: '.' + (options.isProxyTrusted ? initialOpts.proxyHostname : req.hostname),
                                 httpOnly: true,
-                                sameSite: 'Lax',
+                                sameSite: 'lax',
                                 secure: options.isProxyTrusted
                                     ? req.headers[PROXY_PROTO] === 'https'
                                     : req.protocol === 'https'

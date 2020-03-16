@@ -44,7 +44,7 @@ export async function sendInitialAutomated(options: AutomatedNCaptchaOpts): Prom
             expires: expires,
             domain: '.' + (options.proxyTrusted ? options.req.headers[options.proxyHostname] : options.req.hostname),
             httpOnly: true,
-            sameSite: 'Lax',
+            sameSite: 'lax',
             secure: options.proxyTrusted
                 ? options.req.headers[options.proxyProto] === 'https'
                 : options.req.protocol === 'https'
