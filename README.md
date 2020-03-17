@@ -44,7 +44,7 @@ $ npm install umbress --save
 
 ## Usage
 
-**❗ Important:** Umbress relies on another middleware in some combinations of configuration so when you set `advancedClientChallenging.enabled = true`, `recaptcha.enabled = true`, `checkSuspiciousAddresses.action = 'check' | 'recaptcha'`, `geoipRule.action = 'check' | 'recaptcha'` and `geoipRule.otherwise = 'check' | 'recaptcha'` it is mandatory to add the next lines of code:
+**❗ Important:** Umbress relies on another middleware in some combinations of configuration so when you set `advancedClientChallenging.enabled = true`, `recaptcha.enabled = true`, `checkSuspiciousAddresses.action = 'check' | 'recaptcha'`, `geoipRule.action = 'check' | 'recaptcha'` and `geoipRule.otherwise = 'check' | 'recaptcha'` it is mandatory to add the next lines of code before using Umbress:
 
 ```typescript
 // ExpressJS above 4.16.0
