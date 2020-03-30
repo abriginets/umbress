@@ -1,3 +1,5 @@
+import 'leaked-handles'
+
 import delay from 'delay'
 import dotenv from 'dotenv'
 import express from 'express'
