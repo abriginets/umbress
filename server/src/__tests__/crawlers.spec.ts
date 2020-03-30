@@ -37,7 +37,7 @@ beforeAll(async done => {
     done()
 })
 
-describe('block users trying to look like a crawler', function() {
+describe('block users trying to look like a crawler', function () {
     const app = express()
 
     app.use(
@@ -46,7 +46,7 @@ describe('block users trying to look like a crawler', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Request passed')
     })
 
@@ -75,7 +75,7 @@ describe('block users trying to look like a crawler', function() {
     })
 })
 
-describe('hitting cached results and throwing 503 to malicious visitors', function() {
+describe('hitting cached results and throwing 503 to malicious visitors', function () {
     const app = express()
 
     app.use(
@@ -87,7 +87,7 @@ describe('hitting cached results and throwing 503 to malicious visitors', functi
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Passed!')
     })
 
@@ -130,7 +130,7 @@ describe('hitting cached results and throwing 503 to malicious visitors', functi
     })
 })
 
-describe('test crawlers access', function() {
+describe('test crawlers access', function () {
     const app = express()
 
     app.use(
@@ -142,7 +142,7 @@ describe('test crawlers access', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Hello, bot')
     })
 
@@ -195,7 +195,7 @@ describe('test crawlers access', function() {
     })
 })
 
-describe('it should allow access for twitterbot', function() {
+describe('it should allow access for twitterbot', function () {
     const app = express()
 
     app.use(
@@ -207,7 +207,7 @@ describe('it should allow access for twitterbot', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Hello, bot')
     })
 

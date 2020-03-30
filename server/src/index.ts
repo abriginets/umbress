@@ -127,7 +127,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
         }
     }
 
-    return async function(req: Req, res: Res, next: Next): Promise<void | Next | Res> {
+    return async function (req: Req, res: Res, next: Next): Promise<void | Next | Res> {
         const ip = getAddress(req, options.isProxyTrusted)
 
         const ratelimiterCachePrefix = 'ratelimiter_'

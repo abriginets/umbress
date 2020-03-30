@@ -32,7 +32,7 @@ export async function checkAddress(ip: string, options: UmbressOptions, redis: R
                         .del(jailKey)
                         .set(jailKey, 'exceeded', 'EX', secondsUntillExpiration)
                         .set('abuseipdb_quota', 'exceeded', 'EX', secondsUntillExpiration)
-                        .exec(function(err) {
+                        .exec(function (err) {
                             if (err) console.error(err)
 
                             if (options.logs === true) {

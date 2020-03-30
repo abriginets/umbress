@@ -28,10 +28,10 @@ app.use(
     })
 )
 
-app.get('/', function(req: express.Request, res: express.Response): void {
+app.get('/', function (req: express.Request, res: express.Response): void {
     res.send('Hello')
 })
 
-app.listen(80, 'localhost', function() {
+app.listen(80, 'localhost', function () {
     console.log('\x1b[32m%s\x1b[0m', `Server started`)
 })

@@ -26,7 +26,7 @@ app.use(
     })
 )
 
-app.get('/', function(req, res) {
+app.get('/', function (req, res) {
     res.status(200).json({ success: true })
 })
 
@@ -40,7 +40,7 @@ beforeAll(async done => {
     done()
 })
 
-describe('Rate limiter', function() {
+describe('Rate limiter', function () {
     it('exceed threshold, check bans, wait for unban', async done => {
         for (let i = 0; i < 10; i++) {
             await request(app)

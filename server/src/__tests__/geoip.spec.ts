@@ -4,7 +4,7 @@ import express from 'express'
 import umbress from '../index'
 import request from 'supertest'
 
-describe('test geoip whitelist', function() {
+describe('test geoip whitelist', function () {
     it('should pass whitelisted without automated checking enabled and block otherwise', async done => {
         const app = express()
 
@@ -25,7 +25,7 @@ describe('test geoip whitelist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed!')
         })
 
@@ -65,7 +65,7 @@ describe('test geoip whitelist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
@@ -106,7 +106,7 @@ describe('test geoip whitelist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
@@ -147,7 +147,7 @@ describe('test geoip whitelist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
@@ -190,7 +190,7 @@ describe('test geoip whitelist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
@@ -216,7 +216,7 @@ describe('test geoip whitelist', function() {
     })
 })
 
-describe('test geoip blacklist', function() {
+describe('test geoip blacklist', function () {
     it('should block blacklisted and pass otherwise with automated checking enabled', async done => {
         const app = express()
 
@@ -237,7 +237,7 @@ describe('test geoip blacklist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
@@ -277,7 +277,7 @@ describe('test geoip blacklist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
@@ -318,7 +318,7 @@ describe('test geoip blacklist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
@@ -359,7 +359,7 @@ describe('test geoip blacklist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
@@ -401,7 +401,7 @@ describe('test geoip blacklist', function() {
             })
         )
 
-        app.get('/', function(req, res) {
+        app.get('/', function (req, res) {
             res.send('Passed')
         })
 
