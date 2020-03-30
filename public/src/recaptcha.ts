@@ -10,7 +10,7 @@ declare global {
     }
 }
 
-window.onloadCallback = function(): void {
+window.onloadCallback = function (): void {
     const hOne = document.querySelector('.recaptcha-content h1') as HTMLElement
     const p = document.querySelector('.recaptcha-content p') as HTMLElement
 
@@ -19,7 +19,7 @@ window.onloadCallback = function(): void {
 
     grecaptcha.render('recaptcha_container', {
         sitekey: '%recaptchaSiteKey%',
-        callback: function() {
+        callback: function () {
             setTimeout(() => {
                 ;(document.getElementById('grecaptcha_form') as HTMLFormElement).submit()
             }, 1500)

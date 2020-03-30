@@ -4,5 +4,7 @@ module.exports =  {
     singleQuote: true,
     printWidth: 120,
     tabWidth: 4,
-    proseWrap: 'never'
+    proseWrap: 'never',
+    endOfLine: 'crlf',
+    arrowParens: 'avoid'
 }

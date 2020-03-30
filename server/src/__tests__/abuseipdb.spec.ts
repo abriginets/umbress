@@ -26,7 +26,7 @@ beforeAll(async done => {
     done()
 })
 
-describe('send request with malicious IP, get response with automated check', function() {
+describe('send request with malicious IP, get response with automated check', function () {
     const app = express()
 
     app.use(express.urlencoded({ extended: true }))
@@ -42,16 +42,12 @@ describe('send request with malicious IP, get response with automated check', fu
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Access granted!')
     })
 
     it('should response with 503', async done => {
-        await request(app)
-            .get('/')
-            .set('X-Forwarded-For', '222.186.42.155')
-            .expect(200)
-            .expect('Access granted!')
+        await request(app).get('/').set('X-Forwarded-For', '222.186.42.155').expect(200).expect('Access granted!')
 
         await delay(5000)
 
@@ -92,7 +88,7 @@ describe('send request with malicious IP, get response with automated check', fu
     }, 10_000)
 })
 
-describe('send request with malicious IP, get response with block', function() {
+describe('send request with malicious IP, get response with block', function () {
     const app = express()
 
     app.use(
@@ -106,7 +102,7 @@ describe('send request with malicious IP, get response with block', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Access granted!')
     })
 
@@ -120,16 +116,13 @@ describe('send request with malicious IP, get response with block', function() {
 
         await delay(5000)
 
-        await request(app)
-            .get('/')
-            .set('X-Forwarded-For', '112.85.42.188')
-            .expect(403)
+        await request(app).get('/').set('X-Forwarded-For', '112.85.42.188').expect(403)
 
         done()
     }, 10_000)
 })
 
-describe('send request with bad IP, get blocked by 403', function() {
+describe('send request with bad IP, get blocked by 403', function () {
     const app = express()
 
     app.use(
@@ -143,7 +136,7 @@ describe('send request with bad IP, get blocked by 403', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Access granted!')
     })
 
@@ -157,16 +150,13 @@ describe('send request with bad IP, get blocked by 403', function() {
 
         await delay(5000)
 
-        await request(app)
-            .get('/')
-            .set('X-Forwarded-For', '222.186.190.92')
-            .expect(403)
+        await request(app).get('/').set('X-Forwarded-For', '222.186.190.92').expect(403)
 
         done()
     }, 10_000)
 })
 
-describe('send request with good IP, access should be granted', function() {
+describe('send request with good IP, access should be granted', function () {
     const app = express()
 
     app.use(
@@ -180,7 +170,7 @@ describe('send request with good IP, access should be granted', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Access granted!')
     })
 
@@ -205,7 +195,7 @@ describe('send request with good IP, access should be granted', function() {
     }, 10_000)
 })
 
-describe('send request with bad ip, get recaptcha', function() {
+describe('send request with bad ip, get recaptcha', function () {
     const app = express()
 
     app.use(express.urlencoded({ extended: true }))
@@ -221,7 +211,7 @@ describe('send request with bad ip, get recaptcha', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Access granted!')
     })
 

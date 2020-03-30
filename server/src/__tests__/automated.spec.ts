@@ -26,10 +26,10 @@ beforeAll(async done => {
     done()
 })
 
-describe('validate automated browser checking options', function() {
+describe('validate automated browser checking options', function () {
     const app = express()
 
-    it('should throw on "enabled" not boolean', function() {
+    it('should throw on "enabled" not boolean', function () {
         expect(() => {
             app.use(
                 umbress({
@@ -42,7 +42,7 @@ describe('validate automated browser checking options', function() {
         }).toThrow()
     })
 
-    it('should throw on "content" not string', function() {
+    it('should throw on "content" not string', function () {
         expect(() => {
             app.use(
                 umbress({
@@ -57,7 +57,7 @@ describe('validate automated browser checking options', function() {
     })
 })
 
-describe('should fail on attemp to bypass', function() {
+describe('should fail on attemp to bypass', function () {
     const app = express()
 
     app.use(
@@ -69,7 +69,7 @@ describe('should fail on attemp to bypass', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Passed!')
     })
 
@@ -121,7 +121,7 @@ describe('should fail on attemp to bypass', function() {
     })
 })
 
-describe('test automated throw 503 on missing body on POST', function() {
+describe('test automated throw 503 on missing body on POST', function () {
     const app = express()
 
     app.use(
@@ -133,7 +133,7 @@ describe('test automated throw 503 on missing body on POST', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Passed!')
     })
 
@@ -160,7 +160,7 @@ describe('test automated throw 503 on missing body on POST', function() {
     })
 })
 
-describe('test automated browser checking', function() {
+describe('test automated browser checking', function () {
     const app = express()
 
     app.use(express.urlencoded({ extended: true }))
@@ -174,7 +174,7 @@ describe('test automated browser checking', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Challenge passed!')
     })
 
@@ -257,17 +257,13 @@ describe('test automated browser checking', function() {
 
         const [clearance] = resTwo.header['set-cookie']
 
-        await request(app)
-            .get('/')
-            .set('Cookie', [umbuuid, clearance])
-            .expect('Challenge passed!')
-            .expect(200)
+        await request(app).get('/').set('Cookie', [umbuuid, clearance]).expect('Challenge passed!').expect(200)
 
         done()
     })
 })
 
-describe('allow users with admin-allowed user-agent to bypass automated check', function() {
+describe('allow users with admin-allowed user-agent to bypass automated check', function () {
     const app = express()
 
     app.use(
@@ -280,7 +276,7 @@ describe('allow users with admin-allowed user-agent to bypass automated check', 
         })
     )
 
-    app.get('/', function(req: Request, res: Response) {
+    app.get('/', function (req: Request, res: Response) {
         res.send('Challenge passed!')
     })
 

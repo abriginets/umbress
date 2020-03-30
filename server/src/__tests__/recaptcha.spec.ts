@@ -26,7 +26,7 @@ beforeAll(async done => {
     done()
 })
 
-describe('normal way', function() {
+describe('normal way', function () {
     const app = express()
 
     app.use(express.urlencoded({ extended: true }))
@@ -43,7 +43,7 @@ describe('normal way', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Captcha passed!')
     })
 
@@ -98,7 +98,7 @@ describe('normal way', function() {
     })
 })
 
-describe('bypass way', function() {
+describe('bypass way', function () {
     const app = express()
 
     app.use(express.urlencoded({ extended: true }))
@@ -115,7 +115,7 @@ describe('bypass way', function() {
         })
     )
 
-    app.get('/', function(req, res) {
+    app.get('/', function (req, res) {
         res.send('Captcha passed!')
     })
 
