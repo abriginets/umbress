@@ -1,3 +1,5 @@
+import 'leaked-handles'
+
 import express from 'express'
 import request from 'supertest'
 import umbress from '../index'

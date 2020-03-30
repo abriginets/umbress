@@ -1,3 +1,5 @@
+import 'leaked-handles'
+
 import Redis from 'ioredis'
 import umbress from '../index'
 import request from 'supertest'
