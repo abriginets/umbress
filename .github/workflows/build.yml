@@ -21,10 +21,6 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Generate build number
-        uses: einaregilsson/build-number@v2 
-        with:
-          token: ${{ secrets.github_token }}
       - name: Setup Redis
         uses: shogo82148/actions-setup-redis@v1
         with:
