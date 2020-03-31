@@ -1,4 +1,4 @@
-import 'leaked-handles'
+//import 'leaked-handles'
 
 import request from 'supertest'
 import express from 'express'
@@ -39,6 +39,8 @@ beforeAll(async done => {
 
     done()
 })
+
+afterAll(() => redis.disconnect())
 
 describe('Rate limiter', function () {
     it('exceed threshold, check bans, wait for unban', async done => {

@@ -1,4 +1,4 @@
-import 'leaked-handles'
+//import 'leaked-handles'
 
 import express from 'express'
 import request from 'supertest'
@@ -36,6 +36,8 @@ beforeAll(async done => {
 
     done()
 })
+
+afterAll(() => redis.disconnect())
 
 describe('block users trying to look like a crawler', function () {
     const app = express()
