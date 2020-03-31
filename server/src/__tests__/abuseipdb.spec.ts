@@ -1,4 +1,4 @@
-import 'leaked-handles'
+//import 'leaked-handles'
 
 import delay from 'delay'
 import dotenv from 'dotenv'
@@ -25,6 +25,8 @@ beforeAll(async done => {
 
     done()
 })
+
+afterAll(() => redis.disconnect())
 
 describe('send request with malicious IP, get response with automated check', function () {
     const app = express()

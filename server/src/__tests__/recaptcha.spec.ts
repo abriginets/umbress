@@ -1,4 +1,4 @@
-import 'leaked-handles'
+//import 'leaked-handles'
 
 import Redis from 'ioredis'
 import umbress from '../index'
@@ -25,6 +25,8 @@ beforeAll(async done => {
 
     done()
 })
+
+afterAll(() => redis.disconnect())
 
 describe('normal way', function () {
     const app = express()

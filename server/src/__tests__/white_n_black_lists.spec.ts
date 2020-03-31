@@ -1,4 +1,4 @@
-import 'leaked-handles'
+//import 'leaked-handles'
 
 import request from 'supertest'
 import express from 'express'
