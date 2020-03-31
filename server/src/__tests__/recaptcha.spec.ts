@@ -29,6 +29,39 @@ beforeAll(async done => {
 
 afterAll(() => redis.disconnect())
 
+describe('no x-forwarded-for way', function() {
+    const app = express()
+
+    app.use(express.urlencoded({ extended: true }))
+
+    app.use(
+        umbress({
+            recaptcha: {
+                enabled: true,
+                siteKey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
+                secretKey: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe',
+                cookieTtl: 0.000231481
+            }
+        })
+    )
+
+    app.get('/', function (req, res) {
+        res.send('Captcha passed!')
+    })
+
+    it('should respond with 403', async done => {
+        await request(app)
+            .get('/')
+            .expect('Content-type', /html/)
+            .expect(403)
+            .expect(/Prove you are not a robot/)
+            .expect('Set-Cookie', cookieRegex)
+            .expect(/This website is currently experiencing heavy malicious traffic and spam attacks/)
+
+        done()
+    })
+})
+
 describe('normal way', function () {
     const app = express()
 
