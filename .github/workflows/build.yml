@@ -45,4 +45,4 @@ jobs:
           COVERALLS_PARALLEL: true
 
       - name: Coveralls Finish Parallel
-        run: curl -k https://coveralls.io/webhook?repo_token=${{ secrets.COVERALLS_TOKEN }} -d "payload[build_num]=$BUILD_NUMBER&payload[status]=done"
+        run: curl -k https://coveralls.io/webhook?repo_token=${{ secrets.COVERALLS_TOKEN }} -d "payload[build_num]=$GITHUB_RUN_ID&payload[status]=done"
