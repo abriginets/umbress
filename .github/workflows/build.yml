@@ -42,8 +42,8 @@ jobs:
         env:
           COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"
           COVERALLS_GIT_BRANCH: "${{ github.ref }}"
-          COVERALLS_SERVICE_NUMBER: $GITHUB_RUN_NUMBER
-          COVERALLS_PARALLEL: true
+#          COVERALLS_SERVICE_NUMBER: $GITHUB_RUN_NUMBER
+#          COVERALLS_PARALLEL: true
 
-      - name: Coveralls Finish Parallel
-        run: curl -k https://coveralls.io/webhook?repo_token=${{ secrets.COVERALLS_TOKEN }} -d "payload[build_num]=$GITHUB_RUN_NUMBER&payload[status]=done"
+#      - name: Coveralls Finish Parallel
+#        run: curl -k https://coveralls.io/webhook?repo_token=${{ secrets.COVERALLS_TOKEN }} -d "payload[build_num]=$GITHUB_RUN_NUMBER&payload[status]=done"
