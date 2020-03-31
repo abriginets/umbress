@@ -21,6 +21,11 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
+      - name: Generate build number
+        uses: einaregilsson/build-number@v2
+        with:
+          token: ${{ secrets.github_token }}
+
       - name: Setup Redis
         uses: shogo82148/actions-setup-redis@v1
         with:
@@ -42,8 +47,8 @@ jobs:
         env:
           COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"
           COVERALLS_GIT_BRANCH: "${{ github.ref }}"
-          COVERALLS_SERVICE_NUMBER: ${{ secrets.GITHUB_RUN_ID }}
+          COVERALLS_SERVICE_NUMBER: $BUILD_NUMBER
           COVERALLS_PARALLEL: true
 
       - name: Coveralls Finish Parallel
-        run: curl -k https://coveralls.io/webhook?repo_token=${{ secrets.COVERALLS_TOKEN }} -d "payload[build_num]=${{ secrets.GITHUB_RUN_ID }}&payload[status]=done"
+        run: curl -k https://coveralls.io/webhook?repo_token=${{ secrets.COVERALLS_TOKEN }} -d "payload[build_num]=$BUILD_NUMBER&payload[status]=done"
