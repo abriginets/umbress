@@ -38,7 +38,7 @@ jobs:
           ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
 
       - name: Coveralls
-        run: echo "${{ GITHUB_RUN_NUMBER }} ${{ env.GITHUB_RUN_NUMBER }} $GITHUB_RUN_NUMBER" && npm run coveralls
+        run: echo "${{ GITHUB_RUN_NUMBER }}" && npm run coveralls
         env:
           COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"
           COVERALLS_GIT_BRANCH: "${{ github.ref }}"
