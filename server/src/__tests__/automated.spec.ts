@@ -123,6 +123,84 @@ describe('should fail on attemp to bypass', function () {
     })
 })
 
+describe('test bypass attempts', function() {
+    const app = express()
+
+    app.use(express.urlencoded({ extended: true }))
+
+    app.use(
+        umbress({
+            isProxyTrusted: true,
+            advancedClientChallenging: {
+                enabled: true,
+                cookieTtl: 0.000231481
+            }
+        })
+    )
+
+    app.get('/', function (req, res) {
+        res.send('Passed!')
+    })
+
+    it('should fail when cookies were substituted after successfully passed check', async done => {
+        const resOne = await request(app)
+            .get('/')
+            .set('X-Forwarded-For', '67.67.67.68')
+            .expect('Content-type', /html/)
+            .expect(503)
+            .expect('Set-Cookie', cookieRegex)
+            .expect(/Checking your browser before accessing the website/)
+
+        const [umbuuid] = resOne.header['set-cookie']
+        const action = resOne.text.match(/action="\?__umbuid=(.+?)"/)[1]
+
+        const uuid = resOne.text.match(skRegex)[1]
+
+        const nums: number[] = [],
+            symb: string[] = []
+
+        uuid.split('').forEach(s => {
+            if (s in '0123456789'.split('')) nums.push(parseInt(s))
+            else symb.push(s)
+        })
+
+        const answer = nums.reduce((a, b) => Math.pow(a, a > 0 ? 1 : a) * Math.pow(b, b > 0 ? 1 : b)) * symb.length
+
+        const resTwo = await request(app)
+            .post('/?__umbuid=' + action)
+            .set({
+                'X-Forwarded-For': '67.67.67.68',
+                'Cookie': umbuuid
+            })
+            .send(`sk=${uuid}&jschallenge=${answer.toString()}`)
+            .expect(301)
+
+        const [clearance] = resTwo.header['set-cookie']
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '67.67.67.68',
+                'Cookie': [umbuuid, clearance]
+            })
+            .expect('Passed!')
+            .expect(200)
+
+        await request(app)
+            .get('/')
+            .set({
+                'X-Forwarded-For': '67.67.67.68',
+                'Cookie': [
+                    `__umbuuid=${uuidv4()}; Domain=.127.0.0.1; Path=/; Expires=Sat, 29 Feb 2020 15:11:06 GMT; HttpOnly; SameSite=Lax`,
+                    `__umb_clearance=${uuidv4()}; Domain=.127.0.0.1; Path=/; Expires=Sat, 29 Feb 2020 15:11:06 GMT; HttpOnly; SameSite=Lax`
+                ]
+            })
+            .expect(503)
+
+        done()
+    })
+})
+
 describe('test automated throw 503 on missing body on POST', function () {
     const app = express()
 
