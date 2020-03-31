@@ -5,6 +5,7 @@ import umbress from '../index'
 import request from 'supertest'
 import { v4 as uuidv4 } from 'uuid'
 import express from 'express'
+import delay from 'delay'
 
 const redis = new Redis({
     keyPrefix: 'umbress_'
@@ -98,6 +99,57 @@ describe('normal way', function () {
 
         done()
     })
+})
+
+describe('timeout way', function() {
+    const app = express()
+
+    app.use(express.urlencoded({ extended: true }))
+
+    app.use(
+        umbress({
+            isProxyTrusted: true,
+            recaptcha: {
+                enabled: true,
+                siteKey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
+                secretKey: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe',
+                cookieTtl: 0.000231481
+            }
+        })
+    )
+
+    app.get('/', function (req, res) {
+        res.send('Captcha passed!')
+    })
+
+    it('should throw recaptcha again after 10 secs timeout', async done => {
+        const resOne = await request(app)
+            .get('/')
+            .set('X-Forwarded-For', '123.45.67.89')
+            .expect('Content-type', /html/)
+            .expect(403)
+            .expect(/Prove you are not a robot/)
+            .expect('Set-Cookie', cookieRegex)
+            .expect(/This website is currently experiencing heavy malicious traffic and spam attacks/)
+
+        const [initialRecaptchaCookie] = resOne.header['set-cookie']
+        const action = resOne.text.match(/action="\?__umb_rcptch_cb=(.+?)"/)[1]
+
+        await delay(11_000)
+
+        await request(app)
+            .post('/?__umb_rcptch_cb=' + action)
+            .set({
+                'X-Forwarded-For': '123.45.67.89',
+                Cookie: initialRecaptchaCookie
+            })
+            .send(`g-recaptcha-response=123456789`)
+            .expect(403)
+            .expect(/Prove you are not a robot/)
+            .expect(/This website is currently experiencing heavy malicious traffic and spam attacks/)
+
+        done()
+    }, 15_000)
 })
 
 describe('bypass way', function () {
