@@ -134,8 +134,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
         const suspiciousJailPrefix = 'abuseipdb_'
         const botsKey = 'bot_' + ip
 
-        let bypassChecking = false
-        const bypassCaptcha = false
+        let isBotAutorized = false
 
         const initialOpts: AutomatedNCaptchaOpts = {
             ip: ip,
@@ -160,14 +159,14 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
          */
 
         if (BOTS_USERAGENT_REGEX.test(req.headers['user-agent'])) {
-            const cache: string | null = await redis.get(botsKey)
+            const cache = await redis.get(botsKey)
 
-            if (cache !== null) {
-                if (options.advancedClientChallenging.enabled) {
-                    bypassChecking = true
-                }
-            } else {
-                let hostnames: string[] = []
+            if (cache === 'authorized') {
+                isBotAutorized = true
+            } else if (cache === 'nonauthorized') {
+                return res.status(403).end()
+            } else if (cache === null) {
+                let hostnames: Array<string> = []
 
                 try {
                     hostnames = await dns.reverse(ip)
@@ -177,32 +176,20 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
 
                 for (const hostname of hostnames) {
                     if (BOTS_HOSTNAME_REGEX.test(hostname)) {
-                        await redis.set(botsKey, ip, 'EX', 60 * 60 * 24 * 180)
-                        if (options.advancedClientChallenging.enabled) {
-                            bypassChecking = true
-                        }
+                        await redis.set(botsKey, 'authorized', 'EX', 60 * 60 * 24 * 180)
+                        isBotAutorized = true
                     } else {
-                        if (!options.blacklist.includes(ip)) {
-                            if (options.advancedClientChallenging.enabled) {
-                                return await sendInitialAutomated(initialOpts)
-                            } else {
-                                options.blacklist.push(ip)
-                                return res.status(403).end()
-                            }
-                        }
+                        await redis.set(botsKey, 'nonauthorized', 'EX', 60 * 60 * 24)
+                        return res.status(403).end()
                     }
                     break
                 }
             }
         } else if (NON_HOSTNAMEABLE_BOTS.test(req.headers['user-agent'])) {
-            if (options.advancedClientChallenging.enabled) {
-                bypassChecking = true
-            }
+            isBotAutorized = true
         } else if (options.advancedClientChallenging.userAgentsWhitelist.toString() !== '/emptyRegExp/') {
             if (options.advancedClientChallenging.userAgentsWhitelist.test(req.headers['user-agent'])) {
-                if (options.advancedClientChallenging.enabled) {
-                    bypassChecking = true
-                }
+                isBotAutorized = true
             }
         }
 
@@ -214,7 +201,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
             if (options.geoipRule.type === 'whitelist') {
                 if (options.geoipRule.codes.includes(req.headers[PROXY_GEOIP] as string)) {
                     if (options.advancedClientChallenging.enabled && options.geoipRule.action === 'pass') {
-                        bypassChecking = true
+                        isBotAutorized = true
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.action === 'check') {
@@ -252,7 +239,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                     }
                 } else {
                     if (options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'pass') {
-                        bypassChecking = true
+                        isBotAutorized = true
                     }
 
                     if (!options.advancedClientChallenging.enabled && options.geoipRule.otherwise === 'check') {
@@ -323,7 +310,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                 }
                 return sendCaptcha(initialOpts)
             } else {
-                if (!allCaptchaCookies && !bypassCaptcha) {
+                if (!allCaptchaCookies && !isBotAutorized) {
                     return await sendCaptcha(initialOpts)
                 } else {
                     if (allCaptchaCookies) {
@@ -404,7 +391,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                 }
                 return await sendInitialAutomated(initialOpts)
             } else {
-                if (!allAutomatedCookies && !bypassChecking) {
+                if (!allAutomatedCookies && !isBotAutorized) {
                     return await sendInitialAutomated(initialOpts)
                 } else {
                     if (allAutomatedCookies) {

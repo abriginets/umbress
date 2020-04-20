@@ -105,16 +105,14 @@ describe('hitting cached results and throwing 503 to malicious visitors', functi
         done()
     })
 
-    it('should respond with 503', async done => {
+    it('should respond with 403', async done => {
         await request(app)
             .get('/')
             .set({
                 'User-Agent': USERAGENTS.google,
                 'X-Forwarded-For': '95.213.255.1'
             })
-            .expect('Content-type', /html/)
-            .expect(503)
-            .expect(/Checking your browser before accessing the website/)
+            .expect(403)
 
         done()
     })

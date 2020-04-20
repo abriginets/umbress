@@ -131,7 +131,7 @@ describe('normal way', function () {
             .expect(200)
 
         done()
-    })
+    }, 10_000)
 })
 
 describe('timeout way', function() {
