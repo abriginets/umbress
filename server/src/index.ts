@@ -438,7 +438,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
          * Ratelimiter
          */
 
-        if (options.rateLimiter.enabled) {
+        if (options.rateLimiter.enabled && !isBotAutorized) {
             const ratelimiterCacheKey = ratelimiterCachePrefix + ip
             const ipKeys = await redis.keys(CACHE_PREFIX + ratelimiterCacheKey + '_*')
             const nowRaw = new Date().valueOf()
