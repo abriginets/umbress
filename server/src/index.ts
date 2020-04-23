@@ -497,7 +497,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
          * If IP is engaged in any kind of malicious activity - block it or send it an automated checking page
          */
 
-        if (options.checkSuspiciousAddresses.enabled) {
+        if (options.checkSuspiciousAddresses.enabled && (await redis.get('abuseipdb_quota') === null)) {
             const suspiciousJailKey = suspiciousJailPrefix + '_' + ip
             const ipData = await redis.get(suspiciousJailKey)
 
