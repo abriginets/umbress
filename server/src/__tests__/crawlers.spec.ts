@@ -18,6 +18,8 @@ const BOTS = {
     twitter: '199.16.157.182'
 }
 
+export const getBotsIps = (): { [key: string]: string } => BOTS
+
 const USERAGENTS = {
     google: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
     yandex: 'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
@@ -26,6 +28,8 @@ const USERAGENTS = {
     mailru: 'Mozilla/5.0 (compatible; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots);',
     twitter: 'Twitterbot/1.0'
 }
+
+export const getBotsUseragents = (): { [key: string]: string } => USERAGENTS
 
 beforeAll(async done => {
     await redis.del('bot_66.249.79.201')
@@ -105,16 +109,14 @@ describe('hitting cached results and throwing 503 to malicious visitors', functi
         done()
     })
 
-    it('should respond with 503', async done => {
+    it('should respond with 403', async done => {
         await request(app)
             .get('/')
             .set({
                 'User-Agent': USERAGENTS.google,
                 'X-Forwarded-For': '95.213.255.1'
             })
-            .expect('Content-type', /html/)
-            .expect(503)
-            .expect(/Checking your browser before accessing the website/)
+            .expect(403)
 
         done()
     })
