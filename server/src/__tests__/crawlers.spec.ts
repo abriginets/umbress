@@ -18,6 +18,8 @@ const BOTS = {
     twitter: '199.16.157.182'
 }
 
+export const getBotsIps = (): { [key: string]: string } => BOTS
+
 const USERAGENTS = {
     google: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
     yandex: 'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
@@ -26,6 +28,8 @@ const USERAGENTS = {
     mailru: 'Mozilla/5.0 (compatible; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots);',
     twitter: 'Twitterbot/1.0'
 }
+
+export const getBotsUseragents = (): { [key: string]: string } => USERAGENTS
 
 beforeAll(async done => {
     await redis.del('bot_66.249.79.201')

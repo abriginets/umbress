@@ -7,6 +7,11 @@ import { v4 as uuidv4 } from 'uuid'
 import express from 'express'
 import delay from 'delay'
 
+import { getBotsIps, getBotsUseragents } from './crawlers.spec'
+
+const googleBotIP = getBotsIps().google
+const googleBotUseragent = getBotsUseragents().google
+
 const redis = new Redis({
     keyPrefix: 'umbress_'
 })
@@ -23,6 +28,8 @@ beforeAll(async done => {
     }
 
     await redis.pipeline([command]).exec()
+
+    await redis.del('bot_' + googleBotIP)
 
     done()
 })
@@ -262,6 +269,41 @@ describe('bypass way', function () {
             .expect(/Prove you are not a robot/)
             .expect('Set-Cookie', cookieRegex)
             .expect(/This website is currently experiencing heavy malicious traffic and spam attacks/)
+
+        done()
+    })
+})
+
+describe('recaptha should not block crawlers', function() {
+    const app = express()
+
+    app.use(express.urlencoded({ extended: true }))
+
+    app.use(
+        umbress({
+            isProxyTrusted: true,
+            recaptcha: {
+                enabled: true,
+                siteKey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
+                secretKey: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe',
+                cookieTtl: 0.000231481
+            }
+        })
+    )
+
+    app.get('/', (req, res) => {
+        res.send('Googlebot passed!')
+    })
+
+    it('should not block google crawler', async done => {
+        await request(app)
+            .get('/')
+            .set({
+                'User-Agent': googleBotUseragent,
+                'X-Forwarded-For': googleBotIP
+            })
+            .expect('Googlebot passed!')
+            .expect(200)
 
         done()
     })
