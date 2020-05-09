@@ -15,6 +15,7 @@ import path from 'path'
 import Redis from 'ioredis'
 import cookie from 'cookie'
 import fetch from 'node-fetch'
+import ipaddr from 'ipaddr.js'
 import { promises as dns } from 'dns'
 import net, { isIPv4, isIPv6 } from 'net'
 import { Request as Req, Response as Res, NextFunction as Next } from 'express'
@@ -439,7 +440,9 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
          */
 
         if (options.rateLimiter.enabled && !isBotAutorized) {
-            const ratelimiterCacheKey = ratelimiterCachePrefix + ip
+            const ipString = isIPv4(ip) ? ip : ipaddr.parse(ip).toNormalizedString().split(':').slice(0, 4).join(':') + '::/64'
+            const ratelimiterCacheKey = ratelimiterCachePrefix + ipString
+
             const ipKeys = await redis.keys(CACHE_PREFIX + ratelimiterCacheKey + '_*')
             const nowRaw = new Date().valueOf()
             const now = Math.round(nowRaw / 1000)
