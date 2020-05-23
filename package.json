@@ -1,6 +1,6 @@
 {
   "name": "umbress",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Blazing fast ExpressJS anti-DDoS middleware ⚡",
   "main": "server/dist/index.js",
   "scripts": {
@@ -21,7 +21,10 @@
     "clean-jade": "rimraf templates/compiled",
     "compile-jade": "pug templates/jade --out templates/compiled",
     "build:jade": "run-s clean-jade compile-jade",
-    "lint": "eslint server/src/** public/src/recaptcha.ts public/src/automated.ts --ext .ts --ext .tsx --fix"
+    "lint": "eslint server/src/** public/src/recaptcha.ts public/src/automated.ts --ext .ts --ext .tsx --fix",
+    "benchmark-compile": "tsc ./benchmark/webserver.ts --esModuleInterop true",
+    "benchmark-start": "set NODE_ENV=production && node ./benchmark/webserver.js",
+    "benchmark-webserver": "run-s benchmark-compile benchmark-start"
   },
   "keywords": [
     "ddos",

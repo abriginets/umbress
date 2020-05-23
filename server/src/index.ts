@@ -128,6 +128,8 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
         }
     }
 
+    const ratelimitedIps = {}
+
     return async function (req: Req, res: Res, next: Next): Promise<void | Next | Res> {
         const ip = getAddress(req, options.isProxyTrusted)
 
@@ -443,6 +445,14 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
             const ipString = isIPv4(ip) ? ip : ipaddr.parse(ip).toNormalizedString().split(':').slice(0, 4).join(':') + '::/64'
             const ratelimiterCacheKey = ratelimiterCachePrefix + ipString
 
+            if (ipString in ratelimitedIps) {
+                return res.status(429)
+                    .set({
+                        'Retry-After': ratelimitedIps[ipString]
+                    })
+                    .end()
+            }
+
             const ipKeys = await redis.keys(CACHE_PREFIX + ratelimiterCacheKey + '_*')
             const nowRaw = new Date().valueOf()
             const now = Math.round(nowRaw / 1000)
@@ -472,6 +482,8 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
                         options.rateLimiter.banFor
                     )
 
+                    ratelimitedIps[ipString] = new Date(bannedUntil * 1000).toUTCString()
+
                     if (options.rateLimiter.clearQueueAfterBan) {
                         const pipeline = ['del']
 
@@ -483,6 +495,10 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
 
                         await redis.pipeline([pipeline]).exec()
                     }
+
+                    setTimeout(() => {
+                        delete ratelimitedIps[ipString]
+                    }, options.rateLimiter.banFor * 1000)
 
                     return res
                         .status(429)
