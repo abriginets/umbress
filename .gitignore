@@ -54,5 +54,7 @@ node_modules/
 server/dist
 public/dist
 
+benchmark/webserver.js
+
 # Compiled templates
 templates/compiled
