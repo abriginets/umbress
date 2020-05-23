@@ -36,6 +36,24 @@ of detection and mitigation like crawlers authenticity checks, malicious IP addr
 - <a href="https://github.com/expressjs/express" target="_blank">Express</a> 4+
 - <a href="https://redis.io/" target="_blank">Redis</a> 4+
 
+## Benchmarks
+
+Since this software is designed to work in highly loaded systems, it should provide high availability and not affect the overall performance of the application in which it works. Mitigating threats and protecting your application from DDoS attacks requires some amount of computing resources, which this software may take from your application in order to defend it. The following table provides information about how much ExpressJS-based application performance can degrade with various modules enabled. Benchmark ran on i5-8250U, 8GB RAM and NVMe drive. Numbers provided below are the avarage values calculated from 10 independent iterations. Each iteration ran using <a href="https://httpd.apache.org/docs/2.4/programs/ab.html" target="_blank">Apache Bench</a> using the next command:
+```bash
+ab -n 10000 -c 200 'http://localhost:3000/{endpoint}'
+```
+
+| * | Requests  | Time per request | Performance degradation
+| ------------- | ------------- | ------------- | ------------- |
+| Blank Express App | 6328.68 req/s  | 31.46ms  | - |
+| **Ratelimiter** | 4627.07 req/s  | 43.97ms  | 26.89% |
+| **Automated Checks** | 3468.94 req/s | 59.37ms | 45.19% |
+| **Recaptcha** | 3540.40 req/s | 57.60ms | 44.06% |
+
+Roughly speaking, *performance degradation* percentages are the price you are paying to mitigate and protect you from DDoS attacks.
+
+<sub>Note that this results may vary depending on your OS, CPU, RAM, etc.</sub> 
+
 ## Install
 
 ```
