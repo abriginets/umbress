@@ -145,14 +145,14 @@ describe('send request with bad IP, get blocked by 403', function () {
     it('should forbid access', async done => {
         await request(app)
             .get('/')
-            .set('X-Forwarded-For', '222.186.190.92')
+            .set('X-Forwarded-For', '162.243.237.90')
             .expect('Content-type', /html/)
             .expect(200)
             .expect('Access granted!')
 
         await delay(5000)
 
-        await request(app).get('/').set('X-Forwarded-For', '222.186.190.92').expect(403)
+        await request(app).get('/').set('X-Forwarded-For', '162.243.237.90').expect(403)
 
         done()
     }, 10_000)
@@ -220,7 +220,7 @@ describe('send request with bad ip, get recaptcha', function () {
     it('should throw recaptcha', async done => {
         await request(app)
             .get('/')
-            .set('X-Forwarded-For', '148.70.32.179')
+            .set('X-Forwarded-For', '222.186.30.59')
             .expect('Content-type', /html/)
             .expect(200)
             .expect('Access granted!')
@@ -229,7 +229,7 @@ describe('send request with bad ip, get recaptcha', function () {
 
         await request(app)
             .get('/')
-            .set('X-Forwarded-For', '148.70.32.179')
+            .set('X-Forwarded-For', '222.186.30.59')
             .expect('Content-type', /html/)
             .expect(403)
             .expect(/Prove you are not a robot/)
