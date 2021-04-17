@@ -16,7 +16,7 @@
     "build:skip-tests": "run-s build-server build-client",
     "build-server:skip-tests": "run-s clean-server build:jade compile-server",
     "test": "rimraf coverage && jest --coverage --config config/jest.js --forceExit",
-    "coveralls": "3.1.0",
+    "coveralls": "coveralls < coverage/lcov.info --verbose",
     "test:debug": "jest --runInBand --config config/jest.js",
     "clean-jade": "rimraf templates/compiled",
     "compile-jade": "pug templates/jade --out templates/compiled",
