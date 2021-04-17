@@ -1,116 +1,116 @@
-import { UmbressOptions } from './types'
+import { UmbressOptions } from './types';
 
 export function defaults(contentForAutomated: string): UmbressOptions {
-    const defaults: UmbressOptions = {
-        /* If your Express instance is behind the proxy (e.g. Nginx)
+  const defaults: UmbressOptions = {
+    /* If your Express instance is behind the proxy (e.g. Nginx)
         This option decides the way umbress is going to find real user's IP address (from it's connection if false and from x-forwarded-for if true) */
 
-        isProxyTrusted: false,
+    isProxyTrusted: false,
 
-        /* Settings to block users based on req/s ratio */
+    /* Settings to block users based on req/s ratio */
 
-        rateLimiter: {
-            /** Enables ratelimiter */
+    rateLimiter: {
+      /** Enables ratelimiter */
 
-            enabled: false,
+      enabled: false,
 
-            /* Requests that can be made */
+      /* Requests that can be made */
 
-            requests: 60,
+      requests: 60,
 
-            /* In X amount of time*/
+      /* In X amount of time*/
 
-            per: 60,
+      per: 60,
 
-            /* Time of ban in seconds */
+      /* Time of ban in seconds */
 
-            banFor: 30,
+      banFor: 30,
 
-            /* Clear history of requests after ban */
+      /* Clear history of requests after ban */
 
-            clearQueueAfterBan: false
-        },
+      clearQueueAfterBan: false,
+    },
 
-        /** This option enables notification about bans and unbans */
+    /** This option enables notification about bans and unbans */
 
-        logs: false,
+    logs: false,
 
-        /** Whitelist and blacklist */
+    /** Whitelist and blacklist */
 
-        whitelist: [],
-        blacklist: [],
+    whitelist: [],
+    blacklist: [],
 
-        /** Ban IP addresses engaged in illegal activities */
+    /** Ban IP addresses engaged in illegal activities */
 
-        checkSuspiciousAddresses: {
-            /** Is enabled */
+    checkSuspiciousAddresses: {
+      /** Is enabled */
 
-            enabled: false,
+      enabled: false,
 
-            /** AbuseIPDB token */
+      /** AbuseIPDB token */
 
-            token: '',
+      token: '',
 
-            /** Action for blocked IP addresses */
+      /** Action for blocked IP addresses */
 
-            action: 'check',
+      action: 'check',
 
-            /** Time to ban IP if it was detected as suspicious */
+      /** Time to ban IP if it was detected as suspicious */
 
-            banFor: 3600,
+      banFor: 3600,
 
-            /** Time for cookie to live in user's web browser */
+      /** Time for cookie to live in user's web browser */
 
-            cookieTtl: 1
-        },
+      cookieTtl: 1,
+    },
 
-        /** Automated browser checking. Special page will be shown to user to pass JS challenge. Thisd is full automatic */
+    /** Automated browser checking. Special page will be shown to user to pass JS challenge. Thisd is full automatic */
 
-        advancedClientChallenging: {
-            /** Is option above enabled - boolean */
+    advancedClientChallenging: {
+      /** Is option above enabled - boolean */
 
-            enabled: false,
+      enabled: false,
 
-            /** Time for cookie to live in user's web browser */
+      /** Time for cookie to live in user's web browser */
 
-            cookieTtl: 30,
+      cookieTtl: 30,
 
-            /** Message for user - html or simple string */
+      /** Message for user - html or simple string */
 
-            content: contentForAutomated,
+      content: contentForAutomated,
 
-            /** Whitelisted User-Agents */
+      /** Whitelisted User-Agents */
 
-            userAgentsWhitelist: /emptyRegExp/,
+      userAgentsWhitelist: /emptyRegExp/,
 
-            /** This is caching layer to store bots and crawlers IP addresses */
+      /** This is caching layer to store bots and crawlers IP addresses */
 
-            cache: 'redis',
+      cache: 'redis',
 
-            /** Redis server address */
+      /** Redis server address */
 
-            cacheHost: '127.0.0.1',
+      cacheHost: '127.0.0.1',
 
-            /** Redis server port */
+      /** Redis server port */
 
-            cachePort: 6379
-        },
-        geoipRule: {
-            type: 'whitelist',
-            codes: [],
-            action: 'pass',
-            otherwise: 'pass'
-        },
-        recaptcha: {
-            enabled: false,
-            siteKey: '',
-            secretKey: '',
-            cookieTtl: 30,
-            header: 'Prove you are not a robot',
-            description:
-                'This website is currently experiencing heavy malicious traffic and spam attacks so we had no choice but to enable captcha for everyone'
-        }
-    }
+      cachePort: 6379,
+    },
+    geoipRule: {
+      type: 'whitelist',
+      codes: [],
+      action: 'pass',
+      otherwise: 'pass',
+    },
+    recaptcha: {
+      enabled: false,
+      siteKey: '',
+      secretKey: '',
+      cookieTtl: 30,
+      header: 'Prove you are not a robot',
+      description:
+                'This website is currently experiencing heavy malicious traffic and spam attacks so we had no choice but to enable captcha for everyone',
+    },
+  };
 
-    return defaults
+  return defaults;
 }

@@ -2,8 +2,9 @@
  * Core Modules
  */
 
-import express from 'express'
-import umbress from './index'
+import express from 'express';
+
+import umbress from './index';
 
 /**
  * Engine Modules
@@ -13,26 +14,26 @@ import umbress from './index'
  * Logic
  */
 
-const app = express()
+const app = express();
 
-app.use(express.urlencoded({ extended: true }))
+app.use(express.urlencoded({ extended: true }));
 
 app.use(
-    umbress({
-        isProxyTrusted: true,
-        recaptcha: {
-            enabled: true,
-            siteKey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
-            secretKey: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe',
-            cookieTtl: 0.000231481
-        }
-    })
-)
+  umbress({
+    isProxyTrusted: true,
+    recaptcha: {
+      enabled: true,
+      siteKey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
+      secretKey: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe',
+      cookieTtl: 0.000231481,
+    },
+  }),
+);
 
 app.get('/', function (req: express.Request, res: express.Response): void {
-    res.send('Hello')
-})
+  res.send('Hello');
+});
 
 app.listen(8080, 'localhost', function () {
-    console.log('\x1b[32m%s\x1b[0m', `Server started`)
-})
+  console.log('\x1b[32m%s\x1b[0m', 'Server started');
+});

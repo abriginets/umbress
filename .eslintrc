@@ -1,0 +1,92 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "plugin:@typescript-eslint/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:import/typescript"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "rules": {
+    "@typescript-eslint/member-delimiter-style": [
+      "off"
+    ],
+    "@typescript-eslint/ban-ts-ignore": [
+      "off"
+    ],
+    "semi": "error",
+    "comma-dangle": [
+      "error",
+      "always-multiline"
+    ],
+    "indent": "off",
+    "no-shadow": [
+      "off"
+    ],
+    "quotes": [
+      "error",
+      "single"
+    ],
+    "@typescript-eslint/no-shadow": [
+      "error"
+    ],
+    "arrow-parens": [
+      "error",
+      "always"
+    ],
+    "@typescript-eslint/indent": [
+      "error",
+      2
+    ],
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "spaced-comment": [
+      "error",
+      "always"
+    ],
+    "no-multiple-empty-lines": [
+      "error",
+      {
+        "max": 2,
+        "maxEOF": 0
+      }
+    ],
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          [
+            "external",
+            "internal",
+            "builtin"
+          ],
+          [
+            "sibling",
+            "parent"
+          ],
+          "index",
+          "object"
+        ],
+        "newlines-between": "always",
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }
+    ]
+  },
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [
+          ".js",
+          ".ts",
+          ".jsx",
+          ".tsx"
+        ]
+      }
+    }
+  }
+}

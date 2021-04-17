@@ -47,9 +47,6 @@ node_modules/
 .env
 .env.test
 
-# VS Code settings
-.vscode/
-
 # Build directories
 server/dist
 public/dist

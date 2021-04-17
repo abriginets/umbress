@@ -2,8 +2,9 @@
  * Core Modules
  */
 
-import express from 'express'
-import umbress from './index'
+import express from 'express';
+
+import umbress from './index';
 
 /**
  * Engine Modules
@@ -13,23 +14,23 @@ import umbress from './index'
  * Logic
  */
 
-const app = express()
+const app = express();
 
-app.use(express.urlencoded({ extended: true }))
+app.use(express.urlencoded({ extended: true }));
 
 app.use(
-    umbress({
-        advancedClientChallenging: {
-            enabled: true,
-            cookieTtl: 0.000231481
-        }
-    })
-)
+  umbress({
+    advancedClientChallenging: {
+      enabled: true,
+      cookieTtl: 0.000231481,
+    },
+  }),
+);
 
 app.get('/', function (req: express.Request, res: express.Response): void {
-    res.send('Hello')
-})
+  res.send('Hello');
+});
 
 app.listen(80, 'localhost', function () {
-    console.log('\x1b[32m%s\x1b[0m', `Server started`)
-})
+  console.log('\x1b[32m%s\x1b[0m', 'Server started');
+});
