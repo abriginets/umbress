@@ -1,4 +1,4 @@
-name: build
+name: CI
 
 on:
   pull_request:
@@ -11,39 +11,34 @@ jobs:
 
     strategy:
       matrix:
-        node: [ '10', '12', '14' ]
+        node: [10, 12, 14]
 
     name: Node ${{ matrix.node }} sample
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Setup node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
-
-      - name: Setup Redis
-        uses: shogo82148/actions-setup-redis@v1
-        with:
-          redis-version: '4.x'
-
+          
       - name: Install
         run: npm install
 
       - name: Build
         run: npm run build:skip-tests
 
-      - name: Test
-        run: npm run test
-        env:
-          ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
-
-      - name: Coveralls
-        run: npm run coveralls
-        env:
-          COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"
-          COVERALLS_GIT_BRANCH: "master"
+#      - name: Test
+#        run: npm run test
+#        env:
+#          ABUSEIPDB_TOKEN: ${{ secrets.ABUSEIPDB_TOKEN }}
+#
+#      - name: Coveralls
+#        run: npm run coveralls
+#        env:
+#          COVERALLS_REPO_TOKEN: "${{ secrets.COVERALLS_TOKEN }}"
+#          COVERALLS_GIT_BRANCH: "master"
 #          COVERALLS_SERVICE_NUMBER: $GITHUB_RUN_NUMBER
 #          COVERALLS_PARALLEL: true
-
+#
 #      - name: Coveralls Finish Parallel
 #        run: curl -k https://coveralls.io/webhook?repo_token=${{ secrets.COVERALLS_TOKEN }} -d "payload[build_num]=$GITHUB_RUN_NUMBER&payload[status]=done"
