@@ -24,6 +24,12 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Typecheck
+        run: npm run types:check
+
+      - name: Lint
+        run: npm run lint
+
       - name: Build
         run: npm run build:skip-tests
 
