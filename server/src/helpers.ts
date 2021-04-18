@@ -1,21 +1,8 @@
-/**
- * Core Modules
- */
-
-
 import { Request } from 'express';
 import { readdirSync, readFileSync } from 'fs';
 import path from 'path';
 
 import { UmbressOptions } from './types';
-
-/**
- * Engine Modules
- */
-
-/**
- * Logic
- */
 
 export const merge = (defaults: UmbressOptions, options: UmbressOptions): UmbressOptions => {
   const result = { ...defaults };

@@ -1,27 +1,28 @@
 {
-    "compileOnSave": true,
-    "compilerOptions": {
-        "module": "commonjs",
-        "pretty": true,
-        "allowJs": false,
-        "inlineSourceMap": false,
-        "removeComments": true,
-        "strict": true,
-        "strictNullChecks": false,
-        "noUnusedLocals": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "moduleResolution": "node",
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        "noImplicitAny": true
-    },
-    "exclude": [
-        "server/src/__tests__",
-        "server/src/automated_test_.ts",
-        "server/src/recaptcha_test_.ts",
-        "benchmark",
-        "node_modules",
-        "server/dist",
-        "public/dist"
-    ]
-  }
+  "compileOnSave": true,
+  "compilerOptions": {
+    "lib": ["es2019"],
+    "module": "commonjs",
+    "pretty": true,
+    "allowJs": false,
+    "inlineSourceMap": false,
+    "removeComments": true,
+    "strict": true,
+    "strictNullChecks": false,
+    "noUnusedLocals": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": true
+  },
+  "exclude": [
+    "server/src/__tests__",
+    "server/src/automated_test_.ts",
+    "server/src/recaptcha_test_.ts",
+    "benchmark",
+    "node_modules",
+    "server/dist",
+    "public/dist"
+  ]
+}

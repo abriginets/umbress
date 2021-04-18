@@ -1,5 +1,4 @@
 import express from 'express';
-import { Redis } from 'ioredis';
 
 export interface UmbressOptions {
   isProxyTrusted?: boolean
@@ -84,7 +83,6 @@ export interface AutomatedNCaptchaOpts {
   proxyProto: string
   automatedTemplate: string
   recaptchaTemplate: string
-  cache: Redis
   automatedCookieTtl: number
   recaptchaCookieTtl: number
 }

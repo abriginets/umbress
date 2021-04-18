@@ -1,27 +1,16 @@
 /* !
  * umbress
- * Copyright(c) 2019 JamesJGoodwin
+ * Copyright(c) 2019-2021 JamesJGoodwin
  * MIT Licensed
  */
 
-
-/**
- * Core Modules
- */
-
 import cookie from 'cookie';
-import { promises as dns } from 'dns';
 import { Request as Req, Response as Res, NextFunction as Next } from 'express';
 import fs from 'fs';
-import Redis from 'ioredis';
 import ipaddr from 'ipaddr.js';
 import net, { isIPv4, isIPv6 } from 'net';
 import fetch from 'node-fetch';
 import path from 'path';
-
-/**
- * Engine Modules
- */
 
 import { checkAddress } from './abuseipdb';
 import { sendInitialAutomated, precompileAutomated } from './automated';
@@ -29,33 +18,8 @@ import { defaults } from './defaults';
 import { getAddress, iterate, merge } from './helpers';
 import { isIpInSubnets, isIpInList } from './ip';
 import { precompileRecaptcha, sendCaptcha } from './recaptcha';
-import { UmbressOptions, HtmlTemplates, AutomatedNCaptchaOpts } from './types';
-
-/**
- * Logic
- */
-
-/**
- * Whitelisted crawlers:
- * Google
- * Yandex
- * Bing
- * Baidu
- * Mail.ru
- * Applebot
- */
-
-const BOTS_USERAGENT_REGEX = /((AdsBot-)?Google(bot)?)|Yandex(Webmaster|Bot|Metrika)|(bing|msn)bot|Baiduspider|Mail\.RU_Bot|Applebot/;
-const BOTS_HOSTNAME_REGEX = /(google(bot)?.com|yandex\.(com|net|ru)|search\.msn\.com|crawl\.baidu\.com|mail\.ru|applebot\.apple\.com)$/;
-
-/**
- * Social Network Bots:
- * VK.com
- * Facebook
- * Twitter
- */
-
-const NON_HOSTNAMEABLE_BOTS = /Twitterbot|facebookexternalhit|vkShare/;
+import { UmbressOptions, HtmlTemplates } from './types';
+import { getWhitelistBlacklistIps, getWhitelistBlacklistKeyType, getWhitelistBlacklistSubnets, performWhitelistBlacklistCheck } from './whitelist-blacklist';
 
 const AUTOMATED_INITIAL_COOKIE = '__umbuuid';
 const AUTOMATED_CLEARANCE_COOKIE = '__umb_clearance';
@@ -102,103 +66,32 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
     templates.recaptcha.index,
   );
 
-  const redis = new Redis({
-    host: options.advancedClientChallenging.cacheHost,
-    port: options.advancedClientChallenging.cachePort,
-    keyPrefix: CACHE_PREFIX,
-  });
-
-  const ipv4Subnets: Array<string> = [];
-  const ipv6Subnets: Array<string> = [];
-  const subnetsTail = new RegExp(/\/\d{1,3}/);
-
-  if (options.whitelist.length > 0 || options.blacklist.length > 0) {
-    let key = '';
-
-    if (options.whitelist.length > 0) key = 'whitelist';
-    if (key.length === 0 && options.blacklist.length > 0) key = 'blacklist';
-
-    for (const entry of options[key]) {
-      if (subnetsTail.test(entry)) {
-        const bareAddr = entry.split('/')[0];
-
-        if (isIPv4(bareAddr)) ipv4Subnets.push(entry);
-        if (isIPv6(bareAddr)) ipv6Subnets.push(entry);
-      }
-    }
-  }
+  const whitelistBlacklistCheckedIps: { [key: string]: boolean } = {};
+  const whitelistBlacklistKeyType = getWhitelistBlacklistKeyType(options.whitelist, options.blacklist);
+  const whitelistBlacklistSubnets = getWhitelistBlacklistSubnets(whitelistBlacklistKeyType, options.whitelist, options.blacklist);
+  const whitelistBlacklistIps = getWhitelistBlacklistIps(whitelistBlacklistKeyType, options.whitelist, options.blacklist);
 
   const ratelimitedIps = {};
 
   return async function (req: Req, res: Res, next: Next): Promise<void | Next | Res> {
     const ip = getAddress(req, options.isProxyTrusted);
 
-    const ratelimiterCachePrefix = 'ratelimiter_';
-    const suspiciousJailPrefix = 'abuseipdb_';
-    const botsKey = 'bot_' + ip;
+    if (userOptions.whitelist || userOptions.blacklist) {
+      const isAccessAllowed = performWhitelistBlacklistCheck(
+        ip,
+        whitelistBlacklistKeyType,
+        whitelistBlacklistCheckedIps,
+        whitelistBlacklistSubnets,
+        whitelistBlacklistIps,
+      );
 
-    let isBotAutorized = false;
+      // cache result of this check
+      whitelistBlacklistCheckedIps[ip] = isAccessAllowed;
 
-    const initialOpts: AutomatedNCaptchaOpts = {
-      ip: ip,
-      req: req,
-      res: res,
-      proxyTrusted: options.isProxyTrusted,
-      automatedCookieName: AUTOMATED_INITIAL_COOKIE,
-      recaptchaCookieName: RECAPTCHA_INITIAL_COOKIE,
-      proxyHostname: PROXY_HOSTNAME.replace('www.', ''),
-      proxyProto: PROXY_PROTO,
-      automatedTemplate: automatedFrame,
-      recaptchaTemplate: recaptchaTemplate,
-      cache: redis,
-      automatedCookieTtl: options.advancedClientChallenging.cookieTtl,
-      recaptchaCookieTtl: options.recaptcha.cookieTtl,
-    };
-
-    /**
-         * If visitor have crawler-like user-agent - check his hostname
-         * If hostname is valid - allow visitor to bypass automated checking
-         * If hostname does not belong to any of the crawlers - add visitor IP to blacklist
-         */
-
-    if (BOTS_USERAGENT_REGEX.test(req.headers['user-agent'])) {
-      const cache = await redis.get(botsKey);
-
-      if (cache === 'authorized') {
-        isBotAutorized = true;
-      } else if (cache === 'nonauthorized') {
+      if (!isAccessAllowed) {
         return res.status(403).end();
-      } else if (cache === null) {
-        let hostnames: Array<string> = [];
-
-        try {
-          hostnames = await dns.reverse(ip);
-        } catch (e) {
-          hostnames = [ip];
-        }
-
-        for (const hostname of hostnames) {
-          if (BOTS_HOSTNAME_REGEX.test(hostname)) {
-            await redis.set(botsKey, 'authorized', 'EX', 60 * 60 * 24 * 180);
-            isBotAutorized = true;
-          } else {
-            await redis.set(botsKey, 'nonauthorized', 'EX', 60 * 60 * 24);
-            return res.status(403).end();
-          }
-          break;
-        }
-      }
-    } else if (NON_HOSTNAMEABLE_BOTS.test(req.headers['user-agent'])) {
-      isBotAutorized = true;
-    } else if (options.advancedClientChallenging.userAgentsWhitelist.toString() !== '/emptyRegExp/') {
-      if (options.advancedClientChallenging.userAgentsWhitelist.test(req.headers['user-agent'])) {
-        isBotAutorized = true;
       }
     }
-
-    /**
-         * GeoIP blocking
-         */
 
     if (PROXY_GEOIP in req.headers) {
       if (options.geoipRule.type === 'whitelist') {
