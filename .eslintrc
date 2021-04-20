@@ -53,6 +53,7 @@
         "maxEOF": 0
       }
     ],
+    "eol-last": ["error", "always"],
     "import/order": [
       "error",
       {

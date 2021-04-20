@@ -2,58 +2,89 @@ import IPCIDR from 'ip-cidr';
 import ipaddr from 'ipaddr.js';
 
 import { WhitelistBlacklistKeyEnum } from './enums/whitelist-blacklist.enums';
+export class WhitelistBlacklistService {
+  private blacklist: string[];
+  private whitelist: string[];
+  private keyType: WhitelistBlacklistKeyEnum;
+  private subnets: IPCIDR[];
+  private ips: string[];
+  private cachedList: { [key: string]: boolean } = {};
 
-export function getWhitelistBlacklistKeyType(whiteList: string[], blackList: string[]): WhitelistBlacklistKeyEnum {
-  if (whiteList.length > 0 && blackList.length > 0) {
-    return WhitelistBlacklistKeyEnum.WHITELIST;
+  constructor(whitelist: string[], blacklist: string[]) {
+    this.blacklist = blacklist;
+    this.whitelist = whitelist;
+    this.keyType = this.getWhitelistBlacklistKeyType();
+    this.subnets = this.getWhitelistBlacklistSubnets();
+    this.ips = this.getWhitelistBlacklistIps();
   }
 
-  if (whiteList.length > 0) {
-    return WhitelistBlacklistKeyEnum.WHITELIST;
+  set cacheListProperty(cacheContent: { [key: string]: boolean }) {
+    this.cachedList = cacheContent;
   }
 
-  if (blackList.length > 0) {
-    return WhitelistBlacklistKeyEnum.BLACKLIST;
-  }
-}
-
-export function getWhitelistBlacklistSubnets(keyType: WhitelistBlacklistKeyEnum, whiteList: string[], blackList: string[]): IPCIDR[] {
-  return (keyType === WhitelistBlacklistKeyEnum.WHITELIST ? whiteList : blackList)
-    .map((cidr) => new IPCIDR(cidr))
-    .filter((cidr) => cidr.isValid());
-}
-
-export function getWhitelistBlacklistIps(keyType: WhitelistBlacklistKeyEnum, whiteList: string[], blackList: string[]): string[] {
-  return (keyType === WhitelistBlacklistKeyEnum.WHITELIST ? whiteList : blackList)
-    .filter((addr) => ipaddr.isValid(addr));
-}
-
-export function performWhitelistBlacklistCheck(
-  userIp: string,
-  key: WhitelistBlacklistKeyEnum,
-  whitelistBlacklistCheckedIps: { [key: string]: boolean },
-  subnets: IPCIDR[],
-  ips: string[],
-): boolean {
-  if (userIp in whitelistBlacklistCheckedIps) {
-    return whitelistBlacklistCheckedIps[userIp];
+  get keyTypeProperty(): WhitelistBlacklistKeyEnum {
+    return this.keyType;
   }
 
-  const ipMatched = subnets.some((subnet) => subnet.contains(userIp)) || ips.includes(userIp);
-
-  if (ipMatched && key === WhitelistBlacklistKeyEnum.WHITELIST) {
-    return true;
+  getWhitelistBlacklistKeyType(): WhitelistBlacklistKeyEnum {
+    if (this.whitelist.length > 0 && this.blacklist.length > 0) {
+      return WhitelistBlacklistKeyEnum.WHITELIST;
+    }
+  
+    if (this.whitelist.length > 0) {
+      return WhitelistBlacklistKeyEnum.WHITELIST;
+    }
+  
+    if (this.blacklist.length > 0) {
+      return WhitelistBlacklistKeyEnum.BLACKLIST;
+    }
   }
 
-  if (!ipMatched && key === WhitelistBlacklistKeyEnum.WHITELIST) {
-    return false;
+  get subnetsProperty(): IPCIDR[] {
+    return this.subnets;
   }
 
-  if (ipMatched && key === WhitelistBlacklistKeyEnum.BLACKLIST) {
-    return false;
+  getWhitelistBlacklistSubnets(): IPCIDR[] {
+    return (this.keyType === WhitelistBlacklistKeyEnum.WHITELIST ? this.whitelist : this.blacklist)
+      .map((cidr) => new IPCIDR(cidr))
+      .filter((cidr) => cidr.isValid());
   }
 
-  if (!ipMatched && key === WhitelistBlacklistKeyEnum.BLACKLIST) {
-    return true;
+  get ipsProperty(): string[] {
+    return this.ips;
+  }
+  
+  getWhitelistBlacklistIps(): string[] {
+    return (this.keyType === WhitelistBlacklistKeyEnum.WHITELIST ? this.whitelist : this.blacklist)
+      .filter((addr) => ipaddr.isValid(addr));
+  }
+
+  performWhitelistBlacklistCheck(userIp: string): boolean {
+    if (userIp in this.cachedList) {
+      return this.cachedList[userIp];
+    }
+  
+    let isAccessAllowed;
+    const ipMatched = this.subnets.some((subnet) => subnet.contains(userIp)) || this.ips.includes(userIp);
+  
+    if (ipMatched && this.keyType === WhitelistBlacklistKeyEnum.WHITELIST) {
+      isAccessAllowed = true;
+    }
+  
+    if (!ipMatched && this.keyType === WhitelistBlacklistKeyEnum.WHITELIST) {
+      isAccessAllowed = false;
+    }
+  
+    if (ipMatched && this.keyType === WhitelistBlacklistKeyEnum.BLACKLIST) {
+      isAccessAllowed = false;
+    }
+  
+    if (!ipMatched && this.keyType === WhitelistBlacklistKeyEnum.BLACKLIST) {
+      isAccessAllowed = true;
+    }
+
+    this.cachedList[userIp] = isAccessAllowed;
+
+    return isAccessAllowed;
   }
 }

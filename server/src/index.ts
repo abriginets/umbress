@@ -19,7 +19,7 @@ import { getAddress, iterate, merge } from './helpers';
 import { isIpInSubnets, isIpInList } from './ip';
 import { precompileRecaptcha, sendCaptcha } from './recaptcha';
 import { UmbressOptions, HtmlTemplates } from './types';
-import { getWhitelistBlacklistIps, getWhitelistBlacklistKeyType, getWhitelistBlacklistSubnets, performWhitelistBlacklistCheck } from './whitelist-blacklist';
+import { WhitelistBlacklistService } from './whitelist-blacklist';
 
 const AUTOMATED_INITIAL_COOKIE = '__umbuuid';
 const AUTOMATED_CLEARANCE_COOKIE = '__umb_clearance';
@@ -66,10 +66,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
     templates.recaptcha.index,
   );
 
-  const whitelistBlacklistCheckedIps: { [key: string]: boolean } = {};
-  const whitelistBlacklistKeyType = getWhitelistBlacklistKeyType(options.whitelist, options.blacklist);
-  const whitelistBlacklistSubnets = getWhitelistBlacklistSubnets(whitelistBlacklistKeyType, options.whitelist, options.blacklist);
-  const whitelistBlacklistIps = getWhitelistBlacklistIps(whitelistBlacklistKeyType, options.whitelist, options.blacklist);
+  const whitelistBlacklistService = new WhitelistBlacklistService(options.whitelist, options.blacklist);
 
   const ratelimitedIps = {};
 
@@ -77,16 +74,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
     const ip = getAddress(req, options.isProxyTrusted);
 
     if (userOptions.whitelist || userOptions.blacklist) {
-      const isAccessAllowed = performWhitelistBlacklistCheck(
-        ip,
-        whitelistBlacklistKeyType,
-        whitelistBlacklistCheckedIps,
-        whitelistBlacklistSubnets,
-        whitelistBlacklistIps,
-      );
-
-      // cache result of this check
-      whitelistBlacklistCheckedIps[ip] = isAccessAllowed;
+      const isAccessAllowed = whitelistBlacklistService.performWhitelistBlacklistCheck(ip);
 
       if (!isAccessAllowed) {
         return res.status(403).end();
