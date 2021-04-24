@@ -12,11 +12,22 @@
   },
   "rules": {
     "@typescript-eslint/member-delimiter-style": [
-      "off"
+      "error",
+      {
+        "multiline": {
+          "delimiter": "semi",
+          "requireLast": true
+        },
+        "singleline": {
+          "delimiter": "semi",
+          "requireLast": false
+        }
+      }
     ],
     "@typescript-eslint/ban-ts-ignore": [
       "off"
     ],
+    "radix": "warn",
     "semi": "error",
     "comma-dangle": [
       "error",
@@ -53,7 +64,10 @@
         "maxEOF": 0
       }
     ],
-    "eol-last": ["error", "always"],
+    "eol-last": [
+      "error",
+      "always"
+    ],
     "import/order": [
       "error",
       {

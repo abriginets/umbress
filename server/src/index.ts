@@ -17,8 +17,9 @@ import { sendInitialAutomated, precompileAutomated } from './automated';
 import { defaults } from './defaults';
 import { getAddress, iterate, merge } from './helpers';
 import { isIpInSubnets, isIpInList } from './ip';
+import { UmbressOptions } from './options/interfaces/options.interface';
+import { Ratelimiter } from './ratelimiter';
 import { precompileRecaptcha, sendCaptcha } from './recaptcha';
-import { UmbressOptions, HtmlTemplates } from './types';
 import { WhitelistBlacklistService } from './whitelist-blacklist';
 
 const AUTOMATED_INITIAL_COOKIE = '__umbuuid';
@@ -67,8 +68,7 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
   );
 
   const whitelistBlacklistService = new WhitelistBlacklistService(options.whitelist, options.blacklist);
-
-  const ratelimitedIps = {};
+  const ratelimiter = new Ratelimiter(options.ratelimiter.rate);
 
   return async function (req: Req, res: Res, next: Next): Promise<void | Next | Res> {
     const ip = getAddress(req, options.isProxyTrusted);
@@ -79,6 +79,10 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
       if (!isAccessAllowed) {
         return res.status(403).end();
       }
+    }
+
+    if (options.ratelimiter) {
+
     }
 
     if (PROXY_GEOIP in req.headers) {
