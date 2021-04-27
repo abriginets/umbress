@@ -6,20 +6,17 @@
 
 import cookie from 'cookie';
 import { Request as Req, Response as Res, NextFunction as Next } from 'express';
-import fs from 'fs';
 import ipaddr from 'ipaddr.js';
-import net, { isIPv4, isIPv6 } from 'net';
+import net, { isIPv4 } from 'net';
 import fetch from 'node-fetch';
-import path from 'path';
 
 import { checkAddress } from './abuseipdb';
-import { sendInitialAutomated, precompileAutomated } from './automated';
-import { defaults } from './defaults';
-import { getAddress, iterate, merge } from './helpers';
+import { sendInitialAutomated } from './automated';
+import { getAddress } from './helpers';
 import { isIpInSubnets, isIpInList } from './ip';
 import { UmbressOptions } from './options/interfaces/options.interface';
 import { Ratelimiter } from './ratelimiter';
-import { precompileRecaptcha, sendCaptcha } from './recaptcha';
+import { sendCaptcha } from './recaptcha';
 import { WhitelistBlacklistService } from './whitelist-blacklist';
 
 const AUTOMATED_INITIAL_COOKIE = '__umbuuid';
@@ -36,44 +33,15 @@ const CACHE_PREFIX = 'umbress_';
 
 const templatesPath = '../../templates/compiled';
 
-export default function umbress(userOptions: UmbressOptions): (req: Req, res: Res, next: Next) => void {
-  const templates: HtmlTemplates = {};
-  const compiledPath = path.join(__dirname, templatesPath);
-
-  fs.readdirSync(compiledPath).forEach((f) => {
-    if (f in templates === false) {
-      templates[f] = {};
-    }
-
-    const filesPath = path.resolve(compiledPath, f);
-
-    fs.readdirSync(filesPath).forEach((h) => {
-      const filePath = path.resolve(filesPath, h);
-
-      templates[f][h.split('.html')[0]] = fs.readFileSync(filePath, { encoding: 'utf-8' });
-    });
-  });
-
-  const defaultOptions = defaults(templates.automated.face);
-  const options = merge(defaultOptions, userOptions);
-
-  iterate(options, defaultOptions);
-
-  const automatedFrame = precompileAutomated(options.advancedClientChallenging.content, templates.automated.frame);
-  const recaptchaTemplate = precompileRecaptcha(
-    options.recaptcha.siteKey,
-    options.recaptcha.header,
-    options.recaptcha.description,
-    templates.recaptcha.index,
-  );
+export default function umbress(options: UmbressOptions): (req: Req, res: Res, next: Next) => void {
 
   const whitelistBlacklistService = new WhitelistBlacklistService(options.whitelist, options.blacklist);
-  const ratelimiter = new Ratelimiter(options.ratelimiter.rate);
+  const ratelimiter = new Ratelimiter(options.ratelimiter.rate, options.ratelimiter.burst, options.ratelimiter.nodelay);
 
   return async function (req: Req, res: Res, next: Next): Promise<void | Next | Res> {
     const ip = getAddress(req, options.isProxyTrusted);
 
-    if (userOptions.whitelist || userOptions.blacklist) {
+    if (options.whitelist || options.blacklist) {
       const isAccessAllowed = whitelistBlacklistService.performWhitelistBlacklistCheck(ip);
 
       if (!isAccessAllowed) {
@@ -82,7 +50,11 @@ export default function umbress(userOptions: UmbressOptions): (req: Req, res: Re
     }
 
     if (options.ratelimiter) {
+      const isAccessAllowed = ratelimiter.process(ip);
 
+      if (!isAccessAllowed) {
+        return res.status(429).end();
+      }
     }
 
     if (PROXY_GEOIP in req.headers) {
