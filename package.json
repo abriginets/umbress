@@ -84,7 +84,7 @@
     "jest": "^26.6.3",
     "leaked-handles": "^5.2.0",
     "mini-css-extract-plugin": "^1.5.0",
-    "node-sass": "^5.0.0",
+    "node-sass": "^6.0.0",
     "npm-run-all": "^4.1.5",
     "postcss-loader": "^5.2.0",
     "pug-cli": "^1.0.0-alpha6",
