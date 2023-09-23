@@ -10,7 +10,7 @@ jobs:
       matrix:
         node: [18, 20]
 
-    name: Node ${{ matrix.node }} sample
+    name: Build (node v${{ matrix.node }})
     steps:
       - uses: actions/checkout@v4
 
