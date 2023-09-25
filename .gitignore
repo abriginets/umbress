@@ -46,15 +46,7 @@ node_modules/
 # dotenv environment variables file
 .env
 .env.test
-
-# VS Code settings
-.vscode/
+.env.local
 
 # Build directories
-server/dist
-public/dist
-
-benchmark/webserver.js
-
-# Compiled templates
-templates/compiled
+dist

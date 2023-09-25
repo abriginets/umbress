@@ -2,26 +2,25 @@
     "compileOnSave": true,
     "compilerOptions": {
         "module": "commonjs",
-        "pretty": true,
-        "allowJs": false,
-        "inlineSourceMap": false,
+        "declaration": true,
         "removeComments": true,
-        "strict": true,
-        "strictNullChecks": false,
-        "noUnusedLocals": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "moduleResolution": "node",
-        "esModuleInterop": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
         "allowSyntheticDefaultImports": true,
-        "noImplicitAny": true
+        "target": "esnext",
+        "sourceMap": true,
+        "outDir": "./dist",
+        "baseUrl": "./",
+        "incremental": true,
+        "skipLibCheck": true,
+        "noImplicitAny": false,
+        "forceConsistentCasingInFileNames": false,
+        "esModuleInterop": true,
+        "resolveJsonModule": true
     },
     "exclude": [
-        "server/src/__tests__",
-        "server/src/automated_test_.ts",
-        "server/src/recaptcha_test_.ts",
-        "benchmark",
         "node_modules",
-        "server/dist",
-        "public/dist"
+        "dist",
+        "**/*.spec.ts",
     ]
-  }
+}
