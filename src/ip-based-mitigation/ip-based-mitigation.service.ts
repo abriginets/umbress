@@ -6,10 +6,10 @@ import { BaseIpBasedMitigationPlugin } from './plugins/base-adapter';
 import { BasePluginService } from '../base-plugin/base-plugin.service';
 
 export class IpBasedMitigationService<R, S> implements BasePluginService<R, S> {
-  static #cacheKeyPrefix = 'ip-based-mitigation-';
+  static cacheKeyPrefix = 'ip-based-mitigation-';
 
   #buildCacheKey(ipAddress: string): string {
-    return `${IpBasedMitigationService.#cacheKeyPrefix}-${ipAddress}`;
+    return `${IpBasedMitigationService.cacheKeyPrefix}-${ipAddress}`;
   }
 
   async execute(

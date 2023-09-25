@@ -16,6 +16,7 @@ export class AbuseIPDBPlugin<R, S> implements BaseIpBasedMitigationPlugin<R, S> 
 
   constructor(options: AbuseIPDBPluginOptions<R, S>) {
     this.#accessToken = options.accessToken;
+    this.#action = options.action;
 
     if (options?.maxAgeInDays) {
       this.#maxAgeInDays = options.maxAgeInDays;
