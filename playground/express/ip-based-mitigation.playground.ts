@@ -6,12 +6,12 @@ import umbress from '../../src/main';
 const app = express();
 
 app.use(
-  umbress({
-    ipAddressExtractor: <express.Request>(request) => request.headers['x-forwarded-for'],
+  umbress<express.Request, express.Response>({
+    ipAddressExtractor: (request) => request.headers['x-forwarded-for'],
     ipBasedMitigation: [
       new AbuseIPDBPlugin({
         accessToken: process.env.ABUSE_IPDB_ACCESS_TOKEN,
-        action: <express.Request, express.Response>(request, response) => response.status(403).end(),
+        action: (request, response) => response.status(403).end(),
       }),
     ],
   }),
