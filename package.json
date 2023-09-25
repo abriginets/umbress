@@ -33,6 +33,7 @@
   "author": "JamesJGoodwin",
   "license": "MIT",
   "dependencies": {
+    "cache-manager": "^5.2.3",
     "defaults": "^2.0.2",
     "ipaddr.js": "^2.1.0"
   },

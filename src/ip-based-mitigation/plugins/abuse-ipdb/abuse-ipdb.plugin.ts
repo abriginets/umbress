@@ -12,6 +12,8 @@ export class AbuseIPDBPlugin implements BaseIpBasedMitigationPlugin {
 
   #abuseIPDBService = new AbuseIPDBService(AbuseIPDBClientInstance);
 
+  #action: typeof this.action;
+
   constructor(options: AbuseIPDBPluginOptions) {
     this.#accessToken = options.accessToken;
 
@@ -24,6 +26,10 @@ export class AbuseIPDBPlugin implements BaseIpBasedMitigationPlugin {
     }
   }
 
+  get name(): string {
+    return this.constructor.name;
+  }
+
   async shouldBan(ipAddress: string): Promise<boolean> {
     const abuseConfidenceScore = await this.#abuseIPDBService.getAbuseConfidenceScore(
       ipAddress,
@@ -32,5 +38,9 @@ export class AbuseIPDBPlugin implements BaseIpBasedMitigationPlugin {
     );
 
     return abuseConfidenceScore >= this.#confidenceScoreToBan;
+  }
+
+  async action<R, S>(request: R, response: S): Promise<void> {
+    this.#action(request, response);
   }
 }

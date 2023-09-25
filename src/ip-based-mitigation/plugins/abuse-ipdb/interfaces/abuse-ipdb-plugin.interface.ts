@@ -13,4 +13,5 @@ export interface AbuseIPDBPluginOptions {
    * Token to access AbuseIPDB API
    */
   accessToken: string;
+  action<R, S>(request: R, response: S): Promise<unknown | void>;
 }

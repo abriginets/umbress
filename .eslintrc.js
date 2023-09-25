@@ -86,4 +86,12 @@ module.exports = {
       },
     },
   },
+  overrides: [
+    {
+      files: ['playground/**/*.ts'],
+      rules: {
+        'import/no-extraneous-dependencies': ['off'],
+      },
+    },
+  ],
 };

@@ -1,9 +1,9 @@
 import { IpBasedMitigationService } from '../ip-based-mitigation/ip-based-mitigation.service';
-import { defaultOptions } from '../options/defaultOptions';
+import { defaultOptions } from '../options/defaults';
 import { UmbressOptions } from '../options/interfaces/options.interface';
 import { OptionsService } from '../options/options.service';
 
-export class ProcessorService {
+export class ProcessorService<R, S> {
   #options: UmbressOptions;
 
   #optionsService: OptionsService;
@@ -20,21 +20,18 @@ export class ProcessorService {
     this.#ipBasedMitigationService = ipBasedMitigationService;
   }
 
-  async process<R extends Request, S extends Response, N extends (...args: unknown[]) => unknown>(
-    request: R,
-    response: S,
-    next: N,
-  ): Promise<S | N | void> {
-    const ipAddress = this.#options.ipAddressExtractor(request);
+  async process(request: R, response: S): Promise<S | void> {
+    const ipAddress = this.#options.ipAddressExtractor<R>(request);
+    const store = await this.#options.caching;
 
     if (this.#options.ipBasedMitigation) {
-      this.#ipBasedMitigationService.execute(
+      this.#ipBasedMitigationService.execute<R, S>(
         request,
         response,
-        next,
         this.#options.ipBasedMitigation,
         this.#options.ipBasedMitigationExecutionStyle,
         ipAddress,
+        store,
       );
     }
   }
