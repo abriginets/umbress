@@ -3,7 +3,7 @@ import { AbuseIPDBClientInstance } from './client/abuse-ipdb.client.instance';
 import { AbuseIPDBPluginOptions } from './interfaces/abuse-ipdb-plugin.interface';
 import { BaseIpBasedMitigationPlugin } from '../base-adapter';
 
-export class AbuseIPDBPlugin implements BaseIpBasedMitigationPlugin {
+export class AbuseIPDBPlugin<R, S> implements BaseIpBasedMitigationPlugin<R, S> {
   #maxAgeInDays?: number;
 
   #confidenceScoreToBan = 80;
@@ -14,7 +14,7 @@ export class AbuseIPDBPlugin implements BaseIpBasedMitigationPlugin {
 
   #action: typeof this.action;
 
-  constructor(options: AbuseIPDBPluginOptions) {
+  constructor(options: AbuseIPDBPluginOptions<R, S>) {
     this.#accessToken = options.accessToken;
 
     if (options?.maxAgeInDays) {
@@ -40,7 +40,7 @@ export class AbuseIPDBPlugin implements BaseIpBasedMitigationPlugin {
     return abuseConfidenceScore >= this.#confidenceScoreToBan;
   }
 
-  async action<R, S>(request: R, response: S): Promise<void> {
+  action(request: R, response: S): S | void {
     this.#action(request, response);
   }
 }

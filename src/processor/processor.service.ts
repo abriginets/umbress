@@ -1,31 +1,30 @@
 import { IpBasedMitigationService } from '../ip-based-mitigation/ip-based-mitigation.service';
-import { defaultOptions } from '../options/defaults';
 import { UmbressOptions } from '../options/interfaces/options.interface';
 import { OptionsService } from '../options/options.service';
 
 export class ProcessorService<R, S> {
-  #options: UmbressOptions;
+  #options: UmbressOptions<R, S>;
 
-  #optionsService: OptionsService;
+  #optionsService: OptionsService<R, S>;
 
-  #ipBasedMitigationService: IpBasedMitigationService;
+  #ipBasedMitigationService: IpBasedMitigationService<R, S>;
 
   constructor(
-    userOptions: UmbressOptions,
-    optionsService: OptionsService,
-    ipBasedMitigationService: IpBasedMitigationService,
+    userOptions: UmbressOptions<R, S>,
+    optionsService: OptionsService<R, S>,
+    ipBasedMitigationService: IpBasedMitigationService<R, S>,
   ) {
     this.#optionsService = optionsService;
-    this.#options = this.#optionsService.mergeDefaultsAndUserProvidedOptions(defaultOptions, userOptions);
+    this.#options = this.#optionsService.mergeDefaultsAndUserProvidedOptions(userOptions);
     this.#ipBasedMitigationService = ipBasedMitigationService;
   }
 
   async process(request: R, response: S): Promise<S | void> {
-    const ipAddress = this.#options.ipAddressExtractor<R>(request);
+    const ipAddress = this.#options.ipAddressExtractor(request);
     const store = await this.#options.caching;
 
     if (this.#options.ipBasedMitigation) {
-      this.#ipBasedMitigationService.execute<R, S>(
+      this.#ipBasedMitigationService.execute(
         request,
         response,
         this.#options.ipBasedMitigation,

@@ -7,8 +7,8 @@ type CachingOptions = {
   caching?: Promise<Cache>;
 };
 
-export type UmbressOptions = CachingOptions & {
-  ipAddressExtractor<R>(request: R): string;
-  ipBasedMitigation?: BaseIpBasedMitigationPlugin[];
+export type UmbressOptions<R, S> = CachingOptions & {
+  ipAddressExtractor(request: R): string;
+  ipBasedMitigation?: BaseIpBasedMitigationPlugin<R, S>[];
   ipBasedMitigationExecutionStyle?: IpBasedMitigationPluginExecutionStyleEnum;
 };

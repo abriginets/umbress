@@ -5,17 +5,17 @@ import { IpBasedMitigationBanMetadata } from './interfaces/ip-based-mitigation.i
 import { BaseIpBasedMitigationPlugin } from './plugins/base-adapter';
 import { BasePluginService } from '../base-plugin/base-plugin.service';
 
-export class IpBasedMitigationService implements BasePluginService {
+export class IpBasedMitigationService<R, S> implements BasePluginService<R, S> {
   static #cacheKeyPrefix = 'ip-based-mitigation-';
 
   #buildCacheKey(ipAddress: string): string {
     return `${IpBasedMitigationService.#cacheKeyPrefix}-${ipAddress}`;
   }
 
-  async execute<R, S>(
+  async execute(
     request: R,
     response: S,
-    plugins: BaseIpBasedMitigationPlugin[],
+    plugins: BaseIpBasedMitigationPlugin<R, S>[],
     executionStyle: IpBasedMitigationPluginExecutionStyleEnum,
     ipAddress: string,
     store: Cache,
@@ -40,10 +40,10 @@ export class IpBasedMitigationService implements BasePluginService {
     }
   }
 
-  async #synchronousExecutionFlow<R, S>(
+  async #synchronousExecutionFlow(
     request: R,
     response: S,
-    plugins: BaseIpBasedMitigationPlugin[],
+    plugins: BaseIpBasedMitigationPlugin<R, S>[],
     ipAddress: string,
     store: Cache,
   ): Promise<void> {
@@ -52,10 +52,10 @@ export class IpBasedMitigationService implements BasePluginService {
     this.#decideOnBan(request, response, results, plugins, ipAddress, store);
   }
 
-  #asyncronousExecutionFlow<R, S>(
+  #asyncronousExecutionFlow(
     request: R,
     response: S,
-    plugins: BaseIpBasedMitigationPlugin[],
+    plugins: BaseIpBasedMitigationPlugin<R, S>[],
     ipAddress: string,
     store: Cache,
   ): void {
@@ -66,11 +66,11 @@ export class IpBasedMitigationService implements BasePluginService {
     });
   }
 
-  async #decideOnBan<R, S>(
+  async #decideOnBan(
     request: R,
     response: S,
     results: boolean[],
-    plugins: BaseIpBasedMitigationPlugin[],
+    plugins: BaseIpBasedMitigationPlugin<R, S>[],
     ipAddress: string,
     store: Cache,
   ) {
@@ -85,11 +85,11 @@ export class IpBasedMitigationService implements BasePluginService {
     }
   }
 
-  async #performAction<R, S>(request: R, response: S, plugin: BaseIpBasedMitigationPlugin) {
+  async #performAction(request: R, response: S, plugin: BaseIpBasedMitigationPlugin<R, S>) {
     await plugin.action(request, response);
   }
 
-  async #saveMetadataBeforeBan(plugin: BaseIpBasedMitigationPlugin, ipAddress: string, store: Cache) {
+  async #saveMetadataBeforeBan(plugin: BaseIpBasedMitigationPlugin<R, S>, ipAddress: string, store: Cache) {
     const metadata = JSON.stringify({ pluginType: plugin.name } as IpBasedMitigationBanMetadata);
 
     await store.set(this.#buildCacheKey(ipAddress), metadata);

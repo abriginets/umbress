@@ -1,7 +1,7 @@
-export abstract class BaseIpBasedMitigationPlugin {
+export abstract class BaseIpBasedMitigationPlugin<R, S> {
   abstract get name(): string;
 
   abstract shouldBan(ipAddress: string): Promise<boolean>;
 
-  abstract action<R, S>(request: R, response: S): Promise<unknown | void>;
+  abstract action(request: R, response: S): S | void;
 }

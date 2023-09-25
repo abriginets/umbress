@@ -7,7 +7,15 @@ const app = express();
 
 app.use(
   umbress<express.Request, express.Response>({
-    ipAddressExtractor: (request) => request.headers['x-forwarded-for'],
+    ipAddressExtractor: (request) => {
+      const xForwardedFor = request.headers['x-forwarded-for'];
+
+      if (Array.isArray(xForwardedFor)) {
+        return xForwardedFor.at(0);
+      }
+
+      return xForwardedFor;
+    },
     ipBasedMitigation: [
       new AbuseIPDBPlugin({
         accessToken: process.env.ABUSE_IPDB_ACCESS_TOKEN,

@@ -1,4 +1,4 @@
-export interface AbuseIPDBPluginOptions {
+export interface AbuseIPDBPluginOptions<R, S> {
   /**
    * Parameter to only return reports within the last X amount of days
    */
@@ -13,5 +13,5 @@ export interface AbuseIPDBPluginOptions {
    * Token to access AbuseIPDB API
    */
   accessToken: string;
-  action<R, S>(request: R, response: S): Promise<unknown | void>;
+  action(request: R, response: S): S | void;
 }
